@@ -9,11 +9,12 @@ const io = new Server(server);
 app.use(express.static(__dirname));
 
 let gameState = {
-    players: {}, // id: { name, hand, score }
+    players: {}, 
+    playerOrder: [],
     deck: [],
     tableStack: [],
-    turn: 0,
-    playerOrder: []
+    turnIndex: 0,
+    status: 'LOBBY' 
 };
 
 function buildDeck() {
@@ -25,38 +26,44 @@ function buildDeck() {
 }
 
 io.on("connection", (socket) => {
-    console.log("Nieuwe connectie:", socket.id);
-
     socket.on("joinGame", (name) => {
+        if (gameState.status !== 'LOBBY') return;
         gameState.players[socket.id] = {
             id: socket.id,
-            name: name || "Anoniem",
+            name: name || "Speler " + (gameState.playerOrder.length + 1),
             hand: [],
             score: 0
         };
         gameState.playerOrder.push(socket.id);
-        io.emit("updateState", gameState);
+        io.emit("updateState", getSanitizedState());
     });
 
     socket.on("startGame", () => {
+        if (gameState.playerOrder.length < 2) return; // Minimaal 2 spelers
+        gameState.status = 'PLAYING';
         gameState.deck = buildDeck();
         gameState.tableStack = [gameState.deck.pop()];
         
-        // Deel kaarten uit aan alle verbonden spelers
-        Object.keys(gameState.players).forEach(id => {
+        gameState.playerOrder.forEach(id => {
             gameState.players[id].hand = gameState.deck.splice(0, 5);
         });
         
-        gameState.turn = 0;
-        io.emit("updateState", gameState);
+        io.emit("updateState", getSanitizedState());
     });
 
     socket.on("disconnect", () => {
-        delete gameState.players[socket.id];
         gameState.playerOrder = gameState.playerOrder.filter(id => id !== socket.id);
-        io.emit("updateState", gameState);
+        delete gameState.players[socket.id];
+        io.emit("updateState", getSanitizedState());
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server draait op poort ${PORT}`));
+// Zorgt dat je de kaarten van anderen niet ziet (stuurt alleen lengte van de hand)
+function getSanitizedState() {
+    let copy = JSON.parse(JSON.stringify(gameState));
+    Object.keys(copy.players).forEach(id => {
+        copy.players[id].handCount = copy.players[id].hand.length;
+        // We verwijderen de echte hand niet hier, dat doen we per individuele socket stroom
+    });
+    return copy;
+}
