@@ -1,6 +1,8 @@
 {
   "name": "online-card-game",
   "version": "1.0.0",
+  "description": "Multiplayer Drankspel",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
