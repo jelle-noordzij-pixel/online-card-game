@@ -2,88 +2,83 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Drankspel</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
-        :root { --accent: #00ffcc; --bg: #0a0d10; --surface: #131720; --card-w: 20vw; --card-h: 28vw; }
-        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        .top-bar { display: flex; gap: 5px; padding: 10px; background: var(--surface); height: 60px; }
-        .score-pill { flex: 1; background: #1c2130; padding: 5px; border-radius: 5px; text-align: center; font-size: 0.7rem; }
-        .active { border: 2px solid var(--accent); }
-        #game-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .card { width: var(--card-w); height: var(--card-h); background: white; color: black; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; position: relative; }
-        .card.back { background: #1e3a5f; border: 2px solid var(--accent); }
-        #player-hand { display: flex; gap: 10px; padding: 20px; justify-content: center; min-height: 150px; }
-        #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; justify-content: center; padding: 40px; }
-        .btn { padding: 20px; background: var(--accent); border: none; font-family: 'Bebas Neue'; font-size: 1.5rem; cursor: pointer; border-radius: 10px; }
+        :root { --accent: #00ffcc; --bg: #0a0d10; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; text-align: center; }
+        #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 10; display: flex; flex-direction: column; justify-content: center; padding: 20px; }
+        .btn { padding: 20px; font-family: 'Bebas Neue'; font-size: 2rem; border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; width: 100%; }
+        .score-bar { display: flex; background: #131720; padding: 10px; gap: 5px; }
+        .pill { flex: 1; padding: 5px; background: #1c2130; border-radius: 5px; font-size: 0.8rem; }
+        .card { width: 70px; height: 100px; background: white; color: black; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; margin: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="setup-menu">
-    <h1 style="text-align:center; font-family:'Bebas Neue'; color:var(--accent);">DRANKSPEL</h1>
-    <input id="p-name" type="text" placeholder="NAAM" style="padding:15px; margin-bottom:10px;">
-    <button class="btn" onclick="join()">JOIN LOBBY</button>
-    <button id="start-btn" class="btn" style="background:orange; display:none; margin-top:10px;" onclick="start()">START SPEL</button>
+    <h1 style="color:var(--accent); font-family:'Bebas Neue';">DRANKSPEL ONLINE</h1>
+    <input id="naamInput" type="text" placeholder="JE NAAM" style="padding:15px; font-size:1rem; margin-bottom:10px;">
+    <button class="btn" style="background:var(--accent);" onclick="verstuurJoin()">JOIN</button>
+    <button id="startKnop" class="btn" style="background:orange; display:none;" onclick="verstuurStart()">START SPEL</button>
 </div>
 
-<div class="top-bar" id="score-bar"></div>
+<div class="score-bar" id="scoreBar"></div>
 
-<div id="game-area">
-    <div style="display:flex; gap:20px;">
-        <div class="card back"></div>
-        <div id="open-card" class="card" style="background:#eee;">?</div>
-    </div>
+<div id="speelveld" style="margin-top:20px;">
+    <p>AFLEGSTAPEL:</p>
+    <div id="openKaart" class="card">?</div>
+    <p>JOUW KAARTEN:</p>
+    <div id="hand"></div>
 </div>
-
-<div id="player-hand"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
 
-    function join() {
-        const n = document.getElementById("p-name").value;
-        if(!n) return;
-        socket.emit("joinGame", n);
-        document.getElementById("start-btn").style.display = "block";
+    function verstuurJoin() {
+        const n = document.getElementById("naamInput").value;
+        if(n) {
+            socket.emit("joinGame", n);
+            document.getElementById("startKnop").style.display = "block";
+        }
     }
 
-    function start() {
-        console.log("CLIENT: Klik op start!");
-        socket.emit("startGame");
+    function verstuurStart() {
+        console.log("Klik gedetecteerd!");
+        socket.emit("GO"); // We sturen nu 'GO'
     }
 
     socket.on("updateState", (state) => {
-        console.log("CLIENT: State ontvangen", state);
+        console.log("Data binnen:", state);
         
-        // Update scores
-        const bar = document.getElementById("score-bar");
-        bar.innerHTML = "";
-        state.playerOrder.forEach((id, idx) => {
+        // Scores
+        const sb = document.getElementById("scoreBar");
+        sb.innerHTML = "";
+        state.playerOrder.forEach(id => {
             const p = state.players[id];
-            bar.innerHTML += `<div class="score-pill ${state.turnIndex === idx ? 'active' : ''}">${p.name}<br>${p.score}</div>`;
+            sb.innerHTML += `<div class="pill">${p.name}<br>${p.score}</div>`;
         });
 
-        // Als spel bezig is
+        // Spelersscherm
         if (state.status === 'PLAYING') {
             document.getElementById("setup-menu").style.display = "none";
             
-            // Open kaart
+            // Bovenste kaart
             const top = state.tableStack[state.tableStack.length - 1];
-            if(top) document.getElementById("open-card").innerHTML = `${top.v}${top.s || ''}`;
+            if(top) document.getElementById("openKaart").innerHTML = top.v + (top.s || "");
 
             // Hand
-            const hand = document.getElementById("player-hand");
-            hand.innerHTML = "";
-            const me = state.players[socket.id];
-            if(me && me.hand) {
-                me.hand.forEach(c => {
-                    const el = document.createElement("div");
-                    el.className = "card";
-                    el.innerHTML = `${c.v}${c.s || ''}`;
-                    hand.appendChild(el);
+            const hDiv = document.getElementById("hand");
+            hDiv.innerHTML = "";
+            const ik = state.players[socket.id];
+            if(ik && ik.hand) {
+                ik.hand.forEach(c => {
+                    const kaartEl = document.createElement("div");
+                    kaartEl.className = "card";
+                    kaartEl.innerHTML = c.v + (c.s || "");
+                    hDiv.appendChild(kaartEl);
                 });
             }
         }
