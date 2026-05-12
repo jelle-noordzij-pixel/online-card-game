@@ -214,9 +214,10 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", () => {
-        gameState.playerOrder = gameState.playerOrder.filter(id => id !== socket.id);
-        delete gameState.players[socket.id];
-        if (gameState.hostId === socket.id) gameState.hostId = gameState.playerOrder[0] || null;
+        const g = gameState;
+        g.playerOrder = g.playerOrder.filter(id => id !== socket.id);
+        delete g.players[socket.id];
+        if (g.hostId === socket.id) g.hostId = g.playerOrder[0] || null;
         sendState();
     });
 });
