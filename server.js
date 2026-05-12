@@ -25,9 +25,26 @@ function buildDeck() {
     return d.sort(() => Math.random() - 0.5);
 }
 
+// Functie om de state veilig te versturen (verbergt kaarten van anderen)
+function sendStateToAll() {
+    gameState.playerOrder.forEach((socketId) => {
+        let privateState = JSON.parse(JSON.stringify(gameState));
+        
+        // Verberg handen van anderen
+        Object.keys(privateState.players).forEach(id => {
+            if (id !== socketId) {
+                privateState.players[id].hand = new Array(privateState.players[id].hand.length).fill({v: '?', s: ''});
+            }
+        });
+        
+        io.to(socketId).emit("updateState", privateState);
+    });
+}
+
 io.on("connection", (socket) => {
     socket.on("joinGame", (name) => {
         if (gameState.status !== 'LOBBY') return;
+        
         gameState.players[socket.id] = {
             id: socket.id,
             name: name || "Speler " + (gameState.playerOrder.length + 1),
@@ -35,11 +52,12 @@ io.on("connection", (socket) => {
             score: 0
         };
         gameState.playerOrder.push(socket.id);
-        io.emit("updateState", getSanitizedState());
+        sendStateToAll();
     });
 
     socket.on("startGame", () => {
-        if (gameState.playerOrder.length < 2) return; // Minimaal 2 spelers
+        if (gameState.playerOrder.length < 1) return; // Voor testen op 1 gezet, zet op 2 voor echt spel
+        
         gameState.status = 'PLAYING';
         gameState.deck = buildDeck();
         gameState.tableStack = [gameState.deck.pop()];
@@ -48,22 +66,16 @@ io.on("connection", (socket) => {
             gameState.players[id].hand = gameState.deck.splice(0, 5);
         });
         
-        io.emit("updateState", getSanitizedState());
+        gameState.turnIndex = 0;
+        sendStateToAll();
     });
 
     socket.on("disconnect", () => {
         gameState.playerOrder = gameState.playerOrder.filter(id => id !== socket.id);
         delete gameState.players[socket.id];
-        io.emit("updateState", getSanitizedState());
+        sendStateToAll();
     });
 });
 
-// Zorgt dat je de kaarten van anderen niet ziet (stuurt alleen lengte van de hand)
-function getSanitizedState() {
-    let copy = JSON.parse(JSON.stringify(gameState));
-    Object.keys(copy.players).forEach(id => {
-        copy.players[id].handCount = copy.players[id].hand.length;
-        // We verwijderen de echte hand niet hier, dat doen we per individuele socket stroom
-    });
-    return copy;
-}
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server live op ${PORT}`));
