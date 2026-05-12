@@ -8,41 +8,55 @@ const io = new Server(server);
 
 app.use(express.static(__dirname));
 
-// Game State op de server
 let gameState = {
-    players: {}, // id: { name: "", hand: [], score: 0 }
+    players: {}, // id: { name, hand, score }
     deck: [],
     tableStack: [],
-    turn: null,
-    state: 'LOBBY' // LOBBY, STARTING, DISCARD, DRAW
+    turn: 0,
+    playerOrder: []
 };
 
-io.on("connection", (socket) => {
-    console.log("Speler verbonden:", socket.id);
+function buildDeck() {
+    const suits = ['♥','♦','♣','♠'];
+    let d = [];
+    for (let v = 1; v <= 13; v++) for (let s of suits) d.push({ v, s });
+    for (let i = 0; i < 3; i++) d.push({ v: 0, s: null });
+    return d.sort(() => Math.random() - 0.5);
+}
 
-    // Als een speler joinen
-    socket.on("join", (playerName) => {
+io.on("connection", (socket) => {
+    console.log("Nieuwe connectie:", socket.id);
+
+    socket.on("joinGame", (name) => {
         gameState.players[socket.id] = {
             id: socket.id,
-            name: playerName,
+            name: name || "Anoniem",
             hand: [],
             score: 0
         };
+        gameState.playerOrder.push(socket.id);
         io.emit("updateState", gameState);
     });
 
-    // Start het spel (stuur naar iedereen)
     socket.on("startGame", () => {
-        // Hier voeg je later de buildDeck() logica toe op de server
-        gameState.state = 'DISCARD';
+        gameState.deck = buildDeck();
+        gameState.tableStack = [gameState.deck.pop()];
+        
+        // Deel kaarten uit aan alle verbonden spelers
+        Object.keys(gameState.players).forEach(id => {
+            gameState.players[id].hand = gameState.deck.splice(0, 5);
+        });
+        
+        gameState.turn = 0;
         io.emit("updateState", gameState);
     });
 
     socket.on("disconnect", () => {
         delete gameState.players[socket.id];
+        gameState.playerOrder = gameState.playerOrder.filter(id => id !== socket.id);
         io.emit("updateState", gameState);
     });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log("Server live!"));
+server.listen(PORT, () => console.log(`Server draait op poort ${PORT}`));
