@@ -3,52 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Drankspel Multiplayer</title>
+    <title>Multiplayer Drankspel</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        /* Jouw CSS blijft hier exact hetzelfde als je al had */
+        /* Jouw prachtige styling uit de singleplayer behouden we */
         :root {
             --accent: #00ffcc; --danger: #ff3366; --warn: #ffcc00;
             --bg: #0a0d10; --surface: #131720; --surface2: #1c2130;
             --card-w: 15vw; --card-h: 22vw;
-            --red: #e74c3c; --blue: #3b82f6; --yellow: #f59e0b;
             --text: #e8eaf0; --muted: #5a6480;
         }
         body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
-        .top-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px 10px; background: var(--surface); border-bottom: 1px solid #1e2535; }
-        .score-pill { background: var(--surface2); padding: 7px 4px; border-radius: 8px; text-align: center; font-size: 0.6rem; }
+        
+        .top-bar { 
+            display: flex; /* Veranderd van grid naar flex voor variabel aantal spelers */
+            gap: 10px; padding: 10px; background: var(--surface); border-bottom: 1px solid #1e2535; overflow-x: auto;
+        }
+        .score-pill { 
+            flex: 1; min-width: 80px; background: var(--surface2); padding: 8px; border-radius: 8px; text-align: center; border-bottom: 2px solid #2a3040;
+        }
+        .active-player { border-bottom-color: var(--accent); }
+
         #game-area { flex: 1; display: flex; flex-direction: column; justify-content: space-around; align-items: center; position: relative; }
-        .card { width: var(--card-w); height: var(--card-h); background: #fff; border-radius: 7px; position: absolute; color: #1a1a1a; display: flex; flex-direction: column; padding: 4px; border: 1px solid rgba(255,255,255,0.15); }
-        .card.back { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border: 2px solid rgba(0,255,204,0.2); }
-        .stacks-row { display: flex; gap: 14vw; }
-        .stack-wrap { position: relative; width: var(--card-w); height: var(--card-h); }
-        #player-hand { display: flex; gap: 5px; }
+        
+        .card { 
+            width: var(--card-w); height: var(--card-h); background: #fff; border-radius: 7px; 
+            color: #1a1a1a; display: flex; flex-direction: column; padding: 4px; border: 1px solid rgba(0,0,0,0.1);
+            font-weight: bold; justify-content: center; align-items: center; font-size: 1.2rem;
+        }
+        .card.back { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border: 2px solid var(--accent); }
+
+        #player-hand { display: flex; gap: 8px; padding: 20px; justify-content: center; }
+
         #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; justify-content: center; padding: 25px; }
-        .start-btn { padding: 18px; border-radius: 14px; background: var(--accent); border: none; font-family: 'Bebas Neue'; font-size: 1.3rem; cursor: pointer; }
+        .menu-card { background: var(--surface); padding: 30px; border-radius: 20px; border: 1px solid #1e2535; }
+        input { width: 100%; padding: 15px; margin-bottom: 20px; border-radius: 10px; border: 1px solid #2a3040; background: var(--surface2); color: white; }
+        .btn { width: 100%; padding: 18px; border-radius: 14px; border: none; font-family: 'Bebas Neue'; font-size: 1.4rem; cursor: pointer; transition: 0.2s; }
+        .btn-accent { background: var(--accent); color: #0a0d10; }
+        .btn-warn { background: var(--warn); color: #0a0d10; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div id="setup-menu">
-    <div style="text-align:center; color:white; font-family:'Bebas Neue'; font-size:3rem;">DRANKSPEL ONLINE</div>
-    <input id="player-name" type="text" placeholder="Jouw Naam" style="padding:15px; margin:20px 0; border-radius:10px; border:none;">
-    <button class="start-btn" onclick="joinGame()">DEELNEMEN</button>
-    <button id="host-btn" class="start-btn" style="margin-top:10px; background:var(--warn); display:none;" onclick="startGame()">START SPEL VOOR IEDEREEN</button>
+    <div class="menu-card">
+        <div style="font-family:'Bebas Neue'; font-size:3rem; color:var(--accent); text-align:center; margin-bottom:10px;">DRANKSPEL ONLINE</div>
+        <input id="player-name" type="text" placeholder="Voer je naam in...">
+        <button class="btn btn-accent" onclick="joinGame()">SERVER JOINEN</button>
+        <div id="lobby-info" style="margin-top:20px; text-align:center; color:var(--muted); font-size:0.8rem;"></div>
+        <button id="start-btn" class="btn btn-warn" style="display:none;" onclick="startGame()">START HET SPEL</button>
+    </div>
 </div>
 
-<div class="top-bar" id="score-bar">
-    </div>
+<div class="top-bar" id="score-bar"></div>
 
 <div id="game-area">
-    <div class="stacks-row">
-        <div class="stack-wrap"><div class="card back"></div></div>
-        <div id="open-stack" class="stack-wrap"></div>
+    <div id="status" style="color:var(--accent); text-transform:uppercase; font-size:0.7rem;">Wachten op spelers...</div>
+    <div style="display:flex; gap:20px;">
+        <div class="stack-wrap">
+            <div class="card back"></div>
+            <div style="font-size:0.5rem; text-align:center; margin-top:5px;">DECK</div>
+        </div>
+        <div id="open-stack" class="stack-wrap">
+            </div>
     </div>
-    <div id="player-hand"></div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<div id="player-hand"></div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script>
     const socket = io();
     let myId = null;
@@ -57,8 +80,8 @@
 
     function joinGame() {
         const name = document.getElementById("player-name").value;
+        if(!name) return alert("Naam invullen!");
         socket.emit("joinGame", name);
-        document.getElementById("host-btn").style.display = "block"; // Laat startknop zien
     }
 
     function startGame() {
@@ -66,37 +89,52 @@
     }
 
     socket.on("updateState", (state) => {
-        console.log("State ontvangen:", state);
+        // 1. Lobby Update
+        const playerList = Object.values(state.players);
+        document.getElementById("lobby-info").innerText = `${playerList.length} speler(s) verbonden`;
         
-        // Update Scorebar
-        const scoreBar = document.getElementById("score-bar");
-        scoreBar.innerHTML = "";
-        Object.values(state.players).forEach(p => {
-            scoreBar.innerHTML += `
-                <div class="score-pill">
-                    <div style="color:var(--accent)">${p.name}</div>
-                    <div>${p.score} PT</div>
-                    <div style="font-size:10px">🎴 ${p.hand.length}</div>
-                </div>`;
-        });
-
-        // Update Hand van de speler zelf
-        const handDiv = document.getElementById("player-hand");
-        handDiv.innerHTML = "";
-        const myData = state.players[socket.id];
-        if (myData && myData.hand) {
-            myData.hand.forEach(card => {
-                const c = document.createElement("div");
-                c.className = "card";
-                c.style.position = "relative";
-                c.innerHTML = `<div>${card.v}</div>`;
-                handDiv.appendChild(c);
-            });
+        if (playerList.length >= 2) {
+            document.getElementById("start-btn").style.display = "block";
         }
 
-        // Verberg menu als spel is begonnen
-        if (state.deck.length > 0) {
+        if (state.status === 'PLAYING') {
             document.getElementById("setup-menu").style.display = "none";
+            
+            // 2. Scorebar (Andere spelers)
+            const scoreBar = document.getElementById("score-bar");
+            scoreBar.innerHTML = "";
+            state.playerOrder.forEach(id => {
+                const p = state.players[id];
+                const activeClass = (state.playerOrder[state.turnIndex] === id) ? 'active-player' : '';
+                scoreBar.innerHTML += `
+                    <div class="score-pill ${activeClass}">
+                        <div style="font-family:'Bebas Neue'; font-size:0.9rem;">${p.name}</div>
+                        <div style="font-size:0.7rem; color:var(--accent)">🎴 ${p.hand.length} kaarten</div>
+                    </div>`;
+            });
+
+            // 3. Jouw eigen hand (GEHEIM)
+            const myData = state.players[socket.id];
+            const handDiv = document.getElementById("player-hand");
+            handDiv.innerHTML = "";
+            if (myData && myData.hand) {
+                myData.hand.forEach(card => {
+                    const c = document.createElement("div");
+                    c.className = "card";
+                    const suit = card.s || '';
+                    const color = (suit === '♥' || suit === '♦') ? 'var(--danger)' : 'black';
+                    c.style.color = color;
+                    c.innerHTML = `<div>${card.v === 0 ? 'J' : card.v}</div><div style="font-size:0.8rem">${suit}</div>`;
+                    handDiv.appendChild(c);
+                });
+            }
+
+            // 4. Open Stapel
+            const openStack = document.getElementById("open-stack");
+            const topCard = state.tableStack[state.tableStack.length - 1];
+            openStack.innerHTML = `<div class="card" style="color:${(topCard.s === '♥' || topCard.s === '♦') ? 'var(--danger)' : 'black'}">
+                ${topCard.v === 0 ? 'J' : topCard.v}<br>${topCard.s || ''}
+            </div>`;
         }
     });
 </script>
