@@ -25,23 +25,22 @@ function buildDeck() {
     return d.sort(() => Math.random() - 0.5);
 }
 
-// Functie om de state veilig te versturen (verbergt kaarten van anderen)
 function sendStateToAll() {
     gameState.playerOrder.forEach((socketId) => {
         let privateState = JSON.parse(JSON.stringify(gameState));
-        
-        // Verberg handen van anderen
         Object.keys(privateState.players).forEach(id => {
             if (id !== socketId) {
+                // Kaarten van anderen zijn geheim
                 privateState.players[id].hand = new Array(privateState.players[id].hand.length).fill({v: '?', s: ''});
             }
         });
-        
         io.to(socketId).emit("updateState", privateState);
     });
 }
 
 io.on("connection", (socket) => {
+    console.log("Nieuwe speler verbonden:", socket.id);
+
     socket.on("joinGame", (name) => {
         if (gameState.status !== 'LOBBY') return;
         
@@ -51,26 +50,39 @@ io.on("connection", (socket) => {
             hand: [],
             score: 0
         };
-        gameState.playerOrder.push(socket.id);
+        
+        // Alleen toevoegen als de speler nog niet in de lijst staat
+        if (!gameState.playerOrder.includes(socket.id)) {
+            gameState.playerOrder.push(socket.id);
+        }
+        
+        console.log(`${name} is gejoind.`);
         sendStateToAll();
     });
 
     socket.on("startGame", () => {
-        if (gameState.playerOrder.length < 1) return; // Voor testen op 1 gezet, zet op 2 voor echt spel
+        console.log("Startknop ingedrukt door:", socket.id);
         
+        // Reset alles voor een schone start
         gameState.status = 'PLAYING';
         gameState.deck = buildDeck();
         gameState.tableStack = [gameState.deck.pop()];
         
         gameState.playerOrder.forEach(id => {
-            gameState.players[id].hand = gameState.deck.splice(0, 5);
+            if (gameState.players[id]) {
+                gameState.players[id].hand = gameState.deck.splice(0, 5);
+            }
         });
         
         gameState.turnIndex = 0;
+        
+        // Belangrijk: Eerst de status naar iedereen sturen
+        io.emit("gameStarted"); // Extra signaal voor de zekerheid
         sendStateToAll();
     });
 
     socket.on("disconnect", () => {
+        console.log("Speler weg:", socket.id);
         gameState.playerOrder = gameState.playerOrder.filter(id => id !== socket.id);
         delete gameState.players[socket.id];
         sendStateToAll();
@@ -78,4 +90,4 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server live op ${PORT}`));
+server.listen(PORT, () => console.log(`Server draait op poort ${PORT}`));
