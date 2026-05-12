@@ -6,40 +6,76 @@
     <title>Drankspel Multiplayer</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        /* Jouw CSS blijft hier exact hetzelfde als je al had */
         :root {
             --accent: #00ffcc; --danger: #ff3366; --warn: #ffcc00;
             --bg: #0a0d10; --surface: #131720; --surface2: #1c2130;
             --card-w: 15vw; --card-h: 22vw;
-            --red: #e74c3c; --blue: #3b82f6; --yellow: #f59e0b;
             --text: #e8eaf0; --muted: #5a6480;
         }
-        body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
-        .top-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px 10px; background: var(--surface); border-bottom: 1px solid #1e2535; }
-        .score-pill { background: var(--surface2); padding: 7px 4px; border-radius: 8px; text-align: center; font-size: 0.6rem; }
+
+        body {
+            background: var(--bg); color: var(--text); margin: 0;
+            font-family: 'DM Mono', monospace;
+            display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
+        }
+
+        /* SCOREBAR */
+        .top-bar {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+            padding: 8px 10px; background: var(--surface); flex-shrink: 0;
+            border-bottom: 1px solid #1e2535;
+        }
+        .score-pill {
+            background: var(--surface2); padding: 7px 4px; border-radius: 8px;
+            border-bottom: 2px solid #2a3040; text-align: center;
+            font-size: 0.6rem; transition: all 0.3s;
+        }
+        .score-pill .name { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; color: var(--muted); }
+        .score-pill .pts { font-size: 1rem; font-family: 'Bebas Neue', sans-serif; color: var(--text); }
+        .active-player { border-bottom-color: var(--accent) !important; box-shadow: 0 0 10px rgba(0,255,204,0.2); }
+
+        /* GAME AREA */
         #game-area { flex: 1; display: flex; flex-direction: column; justify-content: space-around; align-items: center; position: relative; }
-        .card { width: var(--card-w); height: var(--card-h); background: #fff; border-radius: 7px; position: absolute; color: #1a1a1a; display: flex; flex-direction: column; padding: 4px; border: 1px solid rgba(255,255,255,0.15); }
-        .card.back { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border: 2px solid rgba(0,255,204,0.2); }
-        .stacks-row { display: flex; gap: 14vw; }
+        
+        .stacks-row { display: flex; gap: 14vw; align-items: center; }
         .stack-wrap { position: relative; width: var(--card-w); height: var(--card-h); }
-        #player-hand { display: flex; gap: 5px; }
-        #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; justify-content: center; padding: 25px; }
-        .start-btn { padding: 18px; border-radius: 14px; background: var(--accent); border: none; font-family: 'Bebas Neue'; font-size: 1.3rem; cursor: pointer; }
+        
+        .card {
+            width: var(--card-w); height: var(--card-h);
+            background: #fff; border-radius: 7px;
+            display: flex; flex-direction: column; padding: 4px;
+            position: absolute; color: #1a1a1a;
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+        }
+        .card.back { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border: 2px solid rgba(0,255,204,0.2); }
+
+        #player-hand { display: flex; gap: 5px; align-items: flex-end; }
+
+        /* SETUP MENU */
+        #setup-menu {
+            position: fixed; inset: 0; background: var(--bg); z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; padding: 25px;
+        }
+        .menu-title { font-family: 'Bebas Neue', sans-serif; font-size: 3rem; text-align: center; color: var(--accent); }
+        .start-btn { width: 100%; padding: 18px; border-radius: 14px; background: var(--accent); border: none; font-family: 'Bebas Neue'; font-size: 1.3rem; cursor: pointer; margin-top: 10px; }
+        input { width: 100%; padding: 15px; background: var(--surface2); border: 1px solid #2a3040; color: white; border-radius: 10px; margin-bottom: 10px; font-family: 'DM Mono'; }
     </style>
 </head>
 <body>
 
 <div id="setup-menu">
-    <div style="text-align:center; color:white; font-family:'Bebas Neue'; font-size:3rem;">DRANKSPEL ONLINE</div>
-    <input id="player-name" type="text" placeholder="Jouw Naam" style="padding:15px; margin:20px 0; border-radius:10px; border:none;">
+    <div class="menu-title">DRANKSPEL ONLINE</div>
+    <input id="player-name" type="text" placeholder="Jouw Naam">
     <button class="start-btn" onclick="joinGame()">DEELNEMEN</button>
-    <button id="host-btn" class="start-btn" style="margin-top:10px; background:var(--warn); display:none;" onclick="startGame()">START SPEL VOOR IEDEREEN</button>
+    <button id="host-btn" class="start-btn" style="background:var(--warn); display:none;" onclick="startGame()">START SPEL</button>
 </div>
 
 <div class="top-bar" id="score-bar">
     </div>
 
 <div id="game-area">
+    <div id="status" style="color:var(--accent); font-size:0.7rem;">WACHTEN OP SPELERS...</div>
     <div class="stacks-row">
         <div class="stack-wrap"><div class="card back"></div></div>
         <div id="open-stack" class="stack-wrap"></div>
@@ -48,17 +84,13 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-
 <script>
     const socket = io();
-    let myId = null;
-
-    socket.on("connect", () => { myId = socket.id; });
 
     function joinGame() {
         const name = document.getElementById("player-name").value;
         socket.emit("joinGame", name);
-        document.getElementById("host-btn").style.display = "block"; // Laat startknop zien
+        document.getElementById("host-btn").style.display = "block"; 
     }
 
     function startGame() {
@@ -66,37 +98,49 @@
     }
 
     socket.on("updateState", (state) => {
-        console.log("State ontvangen:", state);
-        
-        // Update Scorebar
+        // 1. Update Score Pills
         const scoreBar = document.getElementById("score-bar");
         scoreBar.innerHTML = "";
-        Object.values(state.players).forEach(p => {
+        
+        state.playerOrder.forEach((id, index) => {
+            const p = state.players[id];
+            const isActive = state.turnIndex === index;
             scoreBar.innerHTML += `
-                <div class="score-pill">
-                    <div style="color:var(--accent)">${p.name}</div>
-                    <div>${p.score} PT</div>
-                    <div style="font-size:10px">🎴 ${p.hand.length}</div>
+                <div class="score-pill ${isActive ? 'active-player' : ''}">
+                    <div class="name">${p.name.toUpperCase()}</div>
+                    <div class="pts">${p.score}</div>
+                    <div style="font-size:8px; color:var(--muted)">🎴 ${p.hand.length}</div>
                 </div>`;
         });
 
-        // Update Hand van de speler zelf
+        // 2. Update Eigen Hand
         const handDiv = document.getElementById("player-hand");
         handDiv.innerHTML = "";
         const myData = state.players[socket.id];
-        if (myData && myData.hand) {
+        
+        if (myData && myData.hand && state.status === 'PLAYING') {
+            document.getElementById("setup-menu").style.display = "none";
             myData.hand.forEach(card => {
                 const c = document.createElement("div");
                 c.className = "card";
                 c.style.position = "relative";
-                c.innerHTML = `<div>${card.v}</div>`;
+                // Kleur bepalen
+                const isRed = (card.s === '♥' || card.s === '♦');
+                c.style.color = isRed ? 'var(--red)' : '#1a1a1a';
+                c.innerHTML = `<div style="font-size:10px">${card.v}${card.s}</div><div style="margin:auto; font-size:20px">${card.s || card.v}</div>`;
                 handDiv.appendChild(c);
             });
         }
 
-        // Verberg menu als spel is begonnen
-        if (state.deck.length > 0) {
-            document.getElementById("setup-menu").style.display = "none";
+        // 3. Update Open Stapel
+        if (state.tableStack.length > 0) {
+            const openStack = document.getElementById("open-stack");
+            const topCard = state.tableStack[state.tableStack.length - 1];
+            openStack.innerHTML = `
+                <div class="card" style="position:relative; color:${(topCard.s === '♥' || topCard.s === '♦') ? 'var(--red)' : '#1a1a1a'}">
+                    <div style="font-size:10px">${topCard.v}${topCard.s}</div>
+                    <div style="margin:auto; font-size:20px">${topCard.s || topCard.v}</div>
+                </div>`;
         }
     });
 </script>
