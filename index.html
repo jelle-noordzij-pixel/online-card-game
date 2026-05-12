@@ -3,55 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Drankspel Multiplayer</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Drankspel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --accent: #00ffcc; --danger: #ff3366; --warn: #ffcc00;
-            --bg: #0a0d10; --surface: #131720; --surface2: #1c2130;
-            --card-w: 20vw; --card-h: 28vw;
-            --text: #e8eaf0; --muted: #5a6480;
-        }
-        body { background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; margin: 0; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
-        
-        /* De rest van je styling blijft gelijk */
-        .top-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 10px; background: var(--surface); border-bottom: 1px solid #1e2535; }
-        .score-pill { background: var(--surface2); padding: 8px; border-radius: 8px; text-align: center; border-bottom: 2px solid #2a3040; }
-        .active-player { border-bottom-color: var(--accent); }
-
-        #game-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 30px; }
-        .stacks-row { display: flex; gap: 40px; }
-        
-        .card { 
-            width: var(--card-w); height: var(--card-h); background: #fff; border-radius: 8px; 
-            color: #1a1a1a; display: flex; flex-direction: column; padding: 10px; 
-            font-weight: bold; border: 1px solid rgba(0,0,0,0.1); font-size: 1.2rem;
-        }
-        .card.back { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border: 2px solid var(--accent); }
-
+        :root { --accent: #00ffcc; --bg: #0a0d10; --surface: #131720; --card-w: 20vw; --card-h: 28vw; }
+        body { background: var(--bg); color: white; font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        .top-bar { display: flex; gap: 5px; padding: 10px; background: var(--surface); height: 60px; }
+        .score-pill { flex: 1; background: #1c2130; padding: 5px; border-radius: 5px; text-align: center; font-size: 0.7rem; }
+        .active { border: 2px solid var(--accent); }
+        #game-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .card { width: var(--card-w); height: var(--card-h); background: white; color: black; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.5rem; position: relative; }
+        .card.back { background: #1e3a5f; border: 2px solid var(--accent); }
         #player-hand { display: flex; gap: 10px; padding: 20px; justify-content: center; min-height: 150px; }
-        .hand-card { position: relative !important; }
-
         #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; justify-content: center; padding: 40px; }
-        .btn { padding: 20px; border-radius: 15px; border: none; font-family: 'Bebas Neue'; font-size: 1.6rem; cursor: pointer; color: black; margin-top: 15px; }
+        .btn { padding: 20px; background: var(--accent); border: none; font-family: 'Bebas Neue'; font-size: 1.5rem; cursor: pointer; border-radius: 10px; }
     </style>
 </head>
 <body>
 
 <div id="setup-menu">
-    <div style="text-align:center; color:var(--accent); font-family:'Bebas Neue'; font-size:4rem;">DRANKSPEL</div>
-    <input id="player-name" type="text" placeholder="NAAM" style="padding:15px; border-radius:10px; margin: 20px 0;">
-    <button class="btn" style="background:var(--accent);" onclick="joinGame()">LOBBY JOINEN</button>
-    <button id="host-btn" class="btn" style="background:var(--warn); display:none;" onclick="startGame()">START HET SPEL</button>
+    <h1 style="text-align:center; font-family:'Bebas Neue'; color:var(--accent);">DRANKSPEL</h1>
+    <input id="p-name" type="text" placeholder="NAAM" style="padding:15px; margin-bottom:10px;">
+    <button class="btn" onclick="join()">JOIN LOBBY</button>
+    <button id="start-btn" class="btn" style="background:orange; display:none; margin-top:10px;" onclick="start()">START SPEL</button>
 </div>
 
 <div class="top-bar" id="score-bar"></div>
 
 <div id="game-area">
-    <div class="stacks-row">
-        <div class="stack-wrap"><div class="card back"></div></div>
-        <div id="open-stack" class="stack-wrap">
-             </div>
+    <div style="display:flex; gap:20px;">
+        <div class="card back"></div>
+        <div id="open-card" class="card" style="background:#eee;">?</div>
     </div>
 </div>
 
@@ -61,60 +43,47 @@
 <script>
     const socket = io();
 
-    function joinGame() {
-        const name = document.getElementById("player-name").value;
-        if(!name) return;
-        socket.emit("joinGame", name);
-        document.getElementById("host-btn").style.display = "block";
+    function join() {
+        const n = document.getElementById("p-name").value;
+        if(!n) return;
+        socket.emit("joinGame", n);
+        document.getElementById("start-btn").style.display = "block";
     }
 
-    function startGame() {
+    function start() {
+        console.log("CLIENT: Klik op start!");
         socket.emit("startGame");
     }
 
-    // Extra check: als het spel begint, haal menu weg
-    socket.on("gameStarted", () => {
-        document.getElementById("setup-menu").style.display = "none";
-    });
-
     socket.on("updateState", (state) => {
-        // Update de scorelijst
-        const scoreBar = document.getElementById("score-bar");
-        scoreBar.innerHTML = "";
-        state.playerOrder.forEach((id, index) => {
+        console.log("CLIENT: State ontvangen", state);
+        
+        // Update scores
+        const bar = document.getElementById("score-bar");
+        bar.innerHTML = "";
+        state.playerOrder.forEach((id, idx) => {
             const p = state.players[id];
-            const active = state.turnIndex === index ? 'active-player' : '';
-            scoreBar.innerHTML += `
-                <div class="score-pill ${active}">
-                    <div style="color:var(--accent); font-family:'Bebas Neue';">${p.name}</div>
-                    <div style="font-size:1.2rem;">${p.score}</div>
-                    <div style="font-size:0.6rem; color:var(--muted);">🎴 ${p.hand.length}</div>
-                </div>`;
+            bar.innerHTML += `<div class="score-pill ${state.turnIndex === idx ? 'active' : ''}">${p.name}<br>${p.score}</div>`;
         });
 
+        // Als spel bezig is
         if (state.status === 'PLAYING') {
             document.getElementById("setup-menu").style.display = "none";
             
-            // Teken de open kaart
-            const openStack = document.getElementById("open-stack");
-            const topCard = state.tableStack[state.tableStack.length - 1];
-            if(topCard) {
-                const color = (topCard.s === '♥' || topCard.s === '♦') ? 'var(--danger)' : 'black';
-                openStack.innerHTML = `<div class="card" style="color:${color}; position:relative;">${topCard.v}${topCard.s || ''}</div>`;
-            }
+            // Open kaart
+            const top = state.tableStack[state.tableStack.length - 1];
+            if(top) document.getElementById("open-card").innerHTML = `${top.v}${top.s || ''}`;
 
-            // Teken jouw hand
-            const handDiv = document.getElementById("player-hand");
-            handDiv.innerHTML = "";
-            const myData = state.players[socket.id];
-            if (myData && myData.hand) {
-                myData.hand.forEach(card => {
-                    const c = document.createElement("div");
-                    c.className = "card hand-card";
-                    const color = (card.s === '♥' || card.s === '♦') ? 'var(--danger)' : 'black';
-                    c.style.color = color;
-                    c.innerHTML = `${card.v}${card.s || ''}`;
-                    handDiv.appendChild(c);
+            // Hand
+            const hand = document.getElementById("player-hand");
+            hand.innerHTML = "";
+            const me = state.players[socket.id];
+            if(me && me.hand) {
+                me.hand.forEach(c => {
+                    const el = document.createElement("div");
+                    el.className = "card";
+                    el.innerHTML = `${c.v}${c.s || ''}`;
+                    hand.appendChild(el);
                 });
             }
         }
