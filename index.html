@@ -18,132 +18,102 @@
             background: var(--bg); color: var(--text); margin: 0;
             font-family: 'DM Mono', monospace;
             display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
-            background-image:
-                radial-gradient(ellipse at 20% 0%, rgba(0,255,204,0.04) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 100%, rgba(255,51,102,0.04) 0%, transparent 60%);
+            background-image: radial-gradient(ellipse at 20% 0%, rgba(0,255,204,0.04) 0%, transparent 60%),
+                              radial-gradient(ellipse at 80% 100%, rgba(255,51,102,0.04) 0%, transparent 60%);
         }
 
-        /* ── SCOREBAR ── */
-        .top-bar { display: grid; gap: 6px; padding: 8px 10px; background: var(--surface); flex-shrink: 0; border-bottom: 1px solid #1e2535; }
-        .score-pill { background: var(--surface2); padding: 7px 4px; border-radius: 8px; border-bottom: 2px solid #2a3040; text-align: center; font-size: 0.6rem; transition: all 0.3s; }
-        .score-pill .name { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; color: var(--muted); }
-        .score-pill .pts { font-size: 1rem; font-family: 'Bebas Neue', sans-serif; color: var(--text); }
+        /* UI */
+        .top-bar { display: grid; grid-auto-flow: column; gap: 6px; padding: 8px; background: var(--surface); border-bottom: 1px solid #1e2535; }
+        .score-pill { background: var(--surface2); padding: 6px; border-radius: 8px; text-align: center; border-bottom: 2px solid #2a3040; }
         .active-player { border-bottom-color: var(--accent) !important; box-shadow: 0 0 10px rgba(0,255,204,0.2); }
-        .active-player .name { color: var(--accent) !important; }
+        .score-pill .name { font-family: 'Bebas Neue'; font-size: 0.8rem; color: var(--muted); }
+        .active-player .name { color: var(--accent); }
+        .score-pill .pts { font-family: 'Bebas Neue'; font-size: 1rem; }
 
-        /* ── GAME AREA ── */
-        #game-area { flex: 1; display: flex; flex-direction: column; justify-content: space-around; align-items: center; position: relative; padding: 5px 0; min-height: 0; }
-        #status { color: var(--accent); font-size: 0.65rem; text-transform: uppercase; height: 14px; text-align: center; letter-spacing: 0.15em; }
-
-        /* ── CARDS ── */
+        /* CARDS */
         .card {
-            width: var(--card-w); height: var(--card-h); background: #fff; border-radius: 7px;
+            width: var(--card-w); height: var(--card-h); background: #fff; border-radius: 6px;
             display: flex; flex-direction: column; padding: 4px; position: absolute; color: #1a1a1a;
-            border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 3px 10px rgba(0,0,0,0.5);
-            transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            transition: transform 0.3s;
         }
         .card.red { color: var(--red); }
-        .card.black { color: #1a1a2e; }
-        .card.special { color: white; background: linear-gradient(135deg, #1d4ed8, #3b82f6); }
-        .card.joker { color: #1a1a1a; background: linear-gradient(135deg, #f59e0b, #fcd34d); }
-        .card.back { background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border: 2px solid rgba(0,255,204,0.2); }
-        .card.selected { transform: translateY(-22px) scale(1.04) !important; border: 2px solid var(--accent) !important; z-index: 200 !important; }
-        
-        .card-target { transform: translateX(-40px) rotate(-7deg) !important; z-index: 100 !important; border: 2px solid var(--accent) !important; }
-        .card-my-discard { transform: translateX(22px) rotate(4deg) !important; z-index: 110 !important; opacity: 0.55; }
+        .card.special { background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: #fff; }
+        .card.joker { background: linear-gradient(135deg, #f59e0b, #fcd34d); }
+        .card.back { background: linear-gradient(135deg, #0f172a, #1e3a5f); border: 2px solid rgba(0,255,204,0.2); }
+        .card.selected { transform: translateY(-20px) !important; border: 2px solid var(--accent) !important; z-index: 100 !important; }
+        .card-target { transform: translateX(-35px) rotate(-8deg) !important; border: 2px solid var(--accent) !important; z-index: 50 !important; }
+        .card-my-discard { transform: translateX(20px) rotate(5deg) !important; opacity: 0.5; }
 
-        .card-corner { font-size: 2.8vw; font-weight: 700; line-height: 1.1; }
-        .card-center { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 6.5vw; font-weight: bold; }
+        .card-corner { font-size: 2.5vw; font-weight: bold; line-height: 1; }
+        .card-center { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 6vw; font-weight: bold; }
 
-        /* ── STACKS ── */
-        .stacks-row { display: flex; gap: 14vw; align-items: center; }
+        /* GAME */
+        #game-area { flex: 1; display: flex; flex-direction: column; justify-content: space-around; align-items: center; position: relative; }
+        .stacks-row { display: flex; gap: 15vw; align-items: center; }
         .stack-wrap { position: relative; width: var(--card-w); height: var(--card-h); cursor: pointer; }
-        .stack-label { position: absolute; bottom: -18px; left: 0; right: 0; text-align: center; font-size: 0.5rem; color: var(--muted); text-transform: uppercase; }
-        .deck-count { position: absolute; top: -18px; right: 0; font-size: 0.5rem; color: var(--muted); }
+        .stack-label { position: absolute; bottom: -20px; width: 100%; text-align: center; font-size: 0.5rem; color: var(--muted); }
+        #player-hand { display: flex; gap: 6px; align-items: flex-end; height: var(--card-h); margin-bottom: 20px; }
+        .card-wrap { position: relative; width: var(--card-w); height: var(--card-h); }
 
-        /* ── HAND ── */
-        #player-hand { display: flex; gap: 5px; align-items: flex-end; }
-        .card-wrap { position: relative; width: var(--card-w); height: var(--card-h); cursor: pointer; }
-        .slot-empty { width: var(--card-w); height: var(--card-h); border: 1px dashed rgba(255,255,255,0.1); border-radius: 7px; opacity: 0.3; }
+        .controls { padding: 12px; display: flex; gap: 10px; background: var(--surface); }
+        .btn { flex: 1; padding: 15px; border-radius: 10px; border: none; font-family: 'Bebas Neue'; font-size: 1.2rem; cursor: pointer; }
+        .btn-accent { background: var(--accent); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
 
-        /* ── CONTROLS ── */
-        .controls { padding: 10px 12px 12px; display: flex; gap: 10px; background: var(--surface); border-top: 1px solid #1e2535; }
-        .btn { flex: 1; padding: 16px; border-radius: 12px; border: none; font-family: 'Bebas Neue'; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; transition: transform 0.1s; }
-        .btn:active { transform: scale(0.96); }
-        .btn-accent { background: var(--accent); color: #0a0d10; }
-        .btn-danger { background: var(--danger); color: white; }
-
-        /* ── REVEAL ── */
-        #reveal-overlay { position: fixed; inset: 0; background: rgba(8,10,15,0.97); z-index: 1000; display: none; flex-direction: column; padding: 16px; overflow-y: auto; }
-        .reveal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
-        .player-result-card { background: var(--surface2); border: 1px solid #2a3040; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; align-items: center; }
-        .result-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin-top: 8px; }
-        .mini-card { position: static !important; width: 9vw !important; height: 13vw !important; transform: none !important; }
-        .mini-card .card-corner { font-size: 2vw !important; }
-        .mini-card .card-center { font-size: 5vw !important; }
-
-        /* ── SETUP / LOBBY ── */
-        #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; justify-content: center; padding: 25px; background-image: radial-gradient(ellipse at 50% 0%, rgba(0,255,204,0.06) 0%, transparent 70%); }
-        .menu-card { background: var(--surface); border: 1px solid #1e2535; padding: 25px; border-radius: 20px; max-width: 400px; margin: 0 auto; width: 100%; }
-        .start-btn { width: 100%; padding: 18px; border: none; border-radius: 14px; background: var(--accent); color: #0a0d10; font-family: 'Bebas Neue'; font-size: 1.3rem; cursor: pointer; letter-spacing: 0.1em; }
-        .lobby-player-item { background: var(--surface2); border-radius: 8px; padding: 10px; margin-bottom: 6px; font-size: 0.75rem; display: flex; justify-content: space-between; }
-        .host-badge { font-size: 0.5rem; background: rgba(0,255,204,0.15); color: var(--accent); padding: 2px 6px; border-radius: 10px; }
-        .code-display { font-size: 2.5rem; font-family: 'Bebas Neue'; color: var(--accent); text-align: center; letter-spacing: 0.2em; margin: 10px 0; text-shadow: 0 0 15px rgba(0,255,204,0.3); }
-        .logout-link { display: block; text-align: center; color: var(--danger); font-size: 0.6rem; margin-top: 20px; cursor: pointer; text-decoration: underline; text-transform: uppercase; }
-        
-        input[type=number] { width: 100%; padding: 14px; background: var(--surface2); border: 1px solid #2a3040; color: white; border-radius: 10px; font-family: 'DM Mono'; font-size: 1rem; text-align: center; }
+        /* OVERLAYS */
+        #setup-menu, #reveal-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; flex-direction: column; padding: 30px; }
+        .menu-card { background: var(--surface); padding: 25px; border-radius: 20px; border: 1px solid #1e2535; width: 100%; max-width: 400px; margin: auto; }
+        .code-display { font-family: 'Bebas Neue'; font-size: 3rem; color: var(--accent); text-align: center; letter-spacing: 5px; margin: 15px 0; }
+        .reveal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; overflow-y: auto; }
+        .mini-card { position: static !important; width: 8vw !important; height: 12vw !important; }
+        .mini-card .card-center { font-size: 4vw; }
+        .mini-card .card-corner { font-size: 2vw; }
     </style>
 </head>
 <body>
 
 <div id="setup-menu">
     <div class="menu-card">
-        <h1 style="font-family:'Bebas Neue'; color:var(--accent); text-align:center; margin:0; letter-spacing: 0.1em;">DRANKSPEL</h1>
-        <div id="welcome-text" style="text-align:center; font-size:0.6rem; color:var(--muted); margin: 5px 0 25px;"></div>
+        <h1 style="font-family:'Bebas Neue'; text-align:center; color:var(--accent); margin:0;">DRANKSPEL</h1>
+        <p id="welcome-text" style="text-align:center; color:var(--muted); font-size:0.7rem;"></p>
         
         <div id="join-options">
-            <button class="start-btn" onclick="createRoom()">NIEUW SPEL STARTEN</button>
-            <div style="margin: 20px 0; display: flex; align-items: center; gap: 10px;">
-                <div style="flex:1; height:1px; background:#1e2535;"></div>
-                <span style="font-size:0.6rem; color:var(--muted);">OF JOIN EEN VRIEND</span>
-                <div style="flex:1; height:1px; background:#1e2535;"></div>
-            </div>
+            <button class="btn btn-accent" style="width:100%; margin-bottom:15px;" onclick="createRoom()">NIEUW SPEL STARTEN</button>
             <div style="display:flex; gap:10px;">
-                <input id="code-input" type="number" placeholder="CODE" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);">
-                <button class="btn btn-accent" style="flex: 0.6; border-radius:10px;" onclick="joinRoom()">JOIN</button>
+                <input id="code-input" type="number" placeholder="CODE" style="flex:1; padding:12px; border-radius:10px; border:none; background:var(--surface2); color:white; text-align:center;">
+                <button class="btn btn-accent" style="flex:0.6;" onclick="joinRoom()">JOIN</button>
             </div>
-            <span class="logout-link" onclick="doLogout()">UITLOGGEN</span>
+            <p style="text-align:center; color:var(--danger); font-size:0.6rem; margin-top:20px; cursor:pointer;" onclick="doLogout()">UITLOGGEN</p>
         </div>
 
         <div id="lobby-section" style="display:none;">
-            <div style="text-align:center;">
-                <span style="font-size:0.55rem; color:var(--muted); letter-spacing:0.1em;">GEEF DEZE CODE DOOR:</span>
-                <div id="display-code" class="code-display">0000</div>
-            </div>
-            <div id="lobby-players" style="margin: 20px 0;"></div>
-            <button class="start-btn" id="start-btn" disabled onclick="startGame()">WACHT OP SPELERS…</button>
+            <p style="text-align:center; font-size:0.6rem; color:var(--muted); margin:0;">DEEL DEZE CODE:</p>
+            <div id="display-code" class="code-display">0000</div>
+            <div id="lobby-players" style="margin-bottom:20px;"></div>
+            <button id="start-btn" class="btn btn-accent" style="width:100%;" onclick="startGame()" disabled>WACHT OP SPELERS...</button>
         </div>
     </div>
 </div>
 
-<div id="reveal-overlay">
-    <h2 id="reveal-title" style="font-family:'Bebas Neue'; text-align:center; color:var(--accent); font-size:2rem; letter-spacing:0.1em;">RONDE OVER</h2>
+<div id="reveal-overlay" style="display:none;">
+    <h2 style="font-family:'Bebas Neue'; color:var(--accent); text-align:center;">RONDE OVER</h2>
     <div class="reveal-grid" id="reveal-grid"></div>
-    <button class="btn btn-accent" id="next-round-btn" style="margin-top:20px; display:none;" onclick="nextRound()">VOLGENDE RONDE →</button>
+    <button id="next-btn" class="btn btn-accent" style="margin-top:20px; display:none;" onclick="nextRound()">VOLGENDE RONDE</button>
 </div>
 
 <div class="top-bar" id="top-bar"></div>
 
 <div id="game-area">
-    <div id="status"></div>
+    <div id="status" style="font-size:0.6rem; color:var(--accent); letter-spacing:1px;"></div>
     <div class="stacks-row">
         <div class="stack-wrap" onclick="drawFromDeck()">
-            <div class="deck-count" id="deck-count"></div>
             <div class="card back"></div>
+            <div id="deck-count" style="position:absolute; top:-15px; width:100%; text-align:center; font-size:0.5rem;"></div>
             <span class="stack-label">DECK</span>
         </div>
         <div class="stack-wrap" id="open-stack" onclick="drawFromOpen()">
-            <span class="stack-label">OPEN</span>
+            <span class="stack-label">OPEN STAPEL</span>
         </div>
     </div>
     <div id="player-hand"></div>
@@ -159,63 +129,35 @@
 <script>
 const sb = supabase.createClient('https://caossvejzjutuwqsjdxc.supabase.co', 'sb_publishable_-I-ilTRgOdHHcHv2s7rJ7g_ecncNr46');
 const socket = io();
-let myId = null;
-let myState = null;
-let selected = [];
-let currentUser = null;
+let myId, myState, currentUser, selected = [];
 
-// ── AUTH CHECK ──
 async function checkAuth() {
     const { data: { session } } = await sb.auth.getSession();
-    if (!session) {
-        window.location.href = 'auth.html';
-    } else {
-        currentUser = session.user;
-        const name = currentUser.user_metadata.username || "Speler";
-        document.getElementById('welcome-text').innerText = "Hoi " + name.toUpperCase();
-    }
+    if (!session) window.location.href = 'auth.html';
+    currentUser = session.user;
+    document.getElementById('welcome-text').innerText = "INGELOGD ALS: " + (currentUser.user_metadata.username || "SPELER");
 }
 checkAuth();
 
-async function doLogout() {
-    await sb.auth.signOut();
-    window.location.href = 'auth.html';
-}
+async function doLogout() { await sb.auth.signOut(); window.location.href = 'auth.html'; }
 
-// ── CARD LOGIC ──
-function cardLabel(v) {
-    if (v === 0) return 'J'; if (v === 1) return 'A';
-    if (v === 11) return 'B'; if (v === 12) return 'V'; if (v === 13) return 'H';
-    return v;
-}
-
-function createCardEl(c, isMini = false, offsetIdx = 0) {
+function createCardEl(c, isMini = false, offset = 0) {
     const div = document.createElement('div');
-    const typeClass = !c ? 'back' : (c.v === 0 ? 'joker' : (c.v === 11 ? 'special' : (c.s === '♥' || c.s === '♦' ? 'red' : 'black')));
-    div.className = `card ${typeClass}${isMini ? ' mini-card' : ''}`;
-    
-    if (!isMini && offsetIdx > 0) {
-        div.style.transform = `translate(${offsetIdx * 1.5}px, ${offsetIdx * 1.5}px)`;
-    }
-
+    const type = !c ? 'back' : (c.v === 0 ? 'joker' : (c.v === 11 ? 'special' : (c.s === '♥' || c.s === '♦' ? 'red' : 'black')));
+    div.className = `card ${type} ${isMini ? 'mini-card' : ''}`;
+    if (!isMini && offset > 0) div.style.transform = `translate(${offset*1.5}px, ${offset*1.5}px)`;
     if (c) {
-        const lbl = cardLabel(c.v);
-        div.innerHTML = `<div class="card-corner">${lbl}<br>${c.s || ''}</div><div class="card-center">${c.s || 'JK'}</div>`;
+        const val = c.v === 1 ? 'A' : c.v === 11 ? 'B' : c.v === 12 ? 'V' : c.v === 13 ? 'H' : c.v === 0 ? 'J' : c.v;
+        div.innerHTML = `<div class="card-corner">${val}<br>${c.s||''}</div><div class="card-center">${c.s||'JK'}</div>`;
     }
     return div;
 }
 
-// ── ACTIONS ──
-function createRoom() {
-    socket.emit('createRoom', { userId: currentUser.id });
-}
-
-function joinRoom() {
+function createRoom() { socket.emit('createRoom', { userId: currentUser.id }); }
+function joinRoom() { 
     const code = document.getElementById('code-input').value;
-    if (code.length !== 4) return alert("Voer de 4-cijferige code in");
-    socket.emit('joinRoom', { code, userId: currentUser.id });
+    if (code.length === 4) socket.emit('joinRoom', { code, userId: currentUser.id });
 }
-
 function startGame() { socket.emit('startGame'); }
 function nextRound() { socket.emit('nextRound'); }
 function confirmDiscard() { socket.emit('discard', { indices: selected }); selected = []; }
@@ -223,9 +165,7 @@ function drawFromDeck() { socket.emit('drawFromDeck'); }
 function drawFromOpen() { socket.emit('drawFromOpen'); }
 function doCall() { socket.emit('call'); }
 
-// ── SOCKETS ──
 socket.on('connect', () => { myId = socket.id; });
-
 socket.on('updateState', (state) => {
     myState = state;
     if (state.status === 'LOBBY') renderLobby(state);
@@ -233,92 +173,64 @@ socket.on('updateState', (state) => {
     else if (state.status === 'REVEAL') renderReveal(state);
 });
 
-socket.on('error', (msg) => alert(msg));
-socket.on('actionError', (msg) => alert(msg));
-
-// ── RENDERING ──
 function renderLobby(state) {
     document.getElementById('setup-menu').style.display = 'flex';
     document.getElementById('join-options').style.display = 'none';
     document.getElementById('lobby-section').style.display = 'block';
-    document.getElementById('display-code').innerText = state.myRoomCode || '----';
-
+    document.getElementById('display-code').innerText = state.myRoomCode;
     const lp = document.getElementById('lobby-players');
-    lp.innerHTML = state.playerOrder.map(id => `
-        <div class="lobby-player-item">
-            <span>${state.players[id].name}</span>
-            ${id === state.hostId ? '<span class="host-badge">HOST</span>' : ''}
-        </div>
-    `).join('');
-
-    const isHost = myId === state.hostId;
-    const startBtn = document.getElementById('start-btn');
-    startBtn.disabled = state.playerOrder.length < 2;
-    startBtn.innerText = isHost ? `SPEL STARTEN (${state.playerOrder.length}P)` : "WACHT OP HOST...";
+    lp.innerHTML = state.playerOrder.map(id => `<div style="background:var(--surface2); padding:8px; border-radius:5px; margin-bottom:5px; font-size:0.7rem;">${state.players[id].name} ${id === state.hostId ? '⭐' : ''}</div>`).join('');
+    const btn = document.getElementById('start-btn');
+    if (myId === state.hostId) {
+        btn.disabled = state.playerOrder.length < 2;
+        btn.innerText = "SPEL STARTEN";
+    } else {
+        btn.innerText = "WACHT OP HOST...";
+    }
 }
 
 function renderGame(state) {
     document.getElementById('setup-menu').style.display = 'none';
     document.getElementById('reveal-overlay').style.display = 'none';
-    
-    // Top bar
     const tb = document.getElementById('top-bar');
-    tb.innerHTML = '';
-    state.playerOrder.forEach(id => {
-        const p = state.players[id];
-        tb.innerHTML += `<div class="score-pill ${id === state.turn ? 'active-player' : ''}">
-            <div class="name">${p.name.toUpperCase()}</div>
+    tb.innerHTML = state.playerOrder.map(id => `
+        <div class="score-pill ${id === state.turn ? 'active-player' : ''}">
+            <div class="name">${state.players[id].name}</div>
             <div class="pts">${state.totals[id]}</div>
-        </div>`;
-    });
+        </div>
+    `).join('');
 
-    // Stacks
     const os = document.getElementById('open-stack');
-    os.innerHTML = '';
+    os.innerHTML = '<span class="stack-label">OPEN STAPEL</span>';
     const visible = state.tableStack.slice(-6);
-    visible.forEach((card, idx) => {
-        const el = createCardEl(card, false, idx);
-        const isMyTurn = state.turn === myId;
-        const dc = state.lastDiscardCount || 1;
-        
-        if (isMyTurn && state.roundState === 'DRAW') {
-            if (idx === visible.length - dc - 1) el.classList.add('card-target');
-            if (idx >= visible.length - dc) el.classList.add('card-my-discard');
+    visible.forEach((c, i) => {
+        const el = createCardEl(c, false, i);
+        if (state.turn === myId && state.roundState === 'DRAW') {
+            if (i === visible.length - (state.lastDiscardCount||1) - 1) el.classList.add('card-target');
+            if (i >= visible.length - (state.lastDiscardCount||1)) el.classList.add('card-my-discard');
         }
         os.appendChild(el);
     });
-    document.getElementById('deck-count').innerText = state.deckCount;
 
-    // Hand
     const handDiv = document.getElementById('player-hand');
     handDiv.innerHTML = '';
-    const me = state.players[myId];
-    if (me && me.hand) {
-        me.hand.forEach((c, i) => {
-            const wrap = document.createElement('div');
-            wrap.className = 'card-wrap';
-            if (c) {
-                const el = createCardEl(c, false, i);
-                if (selected.includes(i)) el.classList.add('selected');
-                wrap.appendChild(el);
-                wrap.onclick = () => {
-                    if (state.turn !== myId || state.roundState !== 'DISCARD') return;
-                    if (selected.includes(i)) selected = selected.filter(x => x !== i);
-                    else selected.push(i);
-                    renderGame(state);
-                };
-            } else wrap.innerHTML = '<div class="slot-empty"></div>';
-            handDiv.appendChild(wrap);
-        });
-    }
+    state.players[myId].hand.forEach((c, i) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'card-wrap';
+        const el = createCardEl(c);
+        if (selected.includes(i)) el.classList.add('selected');
+        wrap.appendChild(el);
+        wrap.onclick = () => {
+            if (state.turn !== myId || state.roundState !== 'DISCARD') return;
+            selected = selected.includes(i) ? selected.filter(x => x !== i) : [...selected, i];
+            renderGame(state);
+        };
+        handDiv.appendChild(wrap);
+    });
 
-    // Status & Buttons
-    const s = document.getElementById('status');
-    const isMyTurn = state.turn === myId;
-    s.innerText = isMyTurn ? (state.roundState === 'DRAW' ? "← PAK EEN KAART" : "JOUW BEURT") : `${state.players[state.turn].name.toUpperCase()} IS AAN DE BEURT...`;
-    
-    document.getElementById('call-btn').style.display = (isMyTurn && state.roundState === 'DISCARD') ? 'block' : 'none';
-    document.getElementById('action-btn').style.visibility = (selected.length > 0) ? 'visible' : 'hidden';
+    document.getElementById('status').innerText = state.turn === myId ? "JOUW BEURT!" : `WACHTEN OP ${state.players[state.turn].name}...`;
+    document.getElementById('call-btn').style.display = (state.turn === myId && state.roundState === 'DISCARD') ? 'block' : 'none';
+    document.getElementById('action-btn').style.visibility = selected.length > 0 ? 'visible' : 'hidden';
 }
 
 function renderReveal(state) {
@@ -326,23 +238,15 @@ function renderReveal(state) {
     overlay.style.display = 'flex';
     const grid = document.getElementById('reveal-grid');
     grid.innerHTML = '';
-    
     state.playerOrder.forEach(id => {
-        const r = state.revealData.results[id];
-        const p = state.players[id];
-        const cardBox = document.createElement('div');
-        cardBox.className = 'player-result-card';
-        cardBox.innerHTML = `
-            <div style="font-family:'Bebas Neue'; letter-spacing:0.05em;">${p.name.toUpperCase()}</div>
-            <div style="font-size:1.4rem; font-family:'Bebas Neue'; color:var(--accent);">${r.ptsThisRound} PT</div>
-            <div class="result-cards"></div>
-        `;
-        const cardRow = cardBox.querySelector('.result-cards');
-        r.hand.forEach(c => cardRow.appendChild(createCardEl(c, true)));
-        grid.appendChild(cardBox);
+        const res = state.revealData.results[id];
+        const box = document.createElement('div');
+        box.style = "background:var(--surface2); padding:10px; border-radius:10px; text-align:center;";
+        box.innerHTML = `<div style="font-family:'Bebas Neue';">${state.players[id].name}</div><div style="color:var(--accent); font-family:'Bebas Neue'; font-size:1.5rem;">${res.ptsThisRound} PT</div><div style="display:flex; justify-content:center; gap:3px; margin-top:5px;"></div>`;
+        res.hand.forEach(c => box.lastChild.appendChild(createCardEl(c, true)));
+        grid.appendChild(box);
     });
-
-    document.getElementById('next-round-btn').style.display = myId === state.hostId ? 'block' : 'none';
+    document.getElementById('next-btn').style.display = myId === state.hostId ? 'block' : 'none';
 }
 </script>
 </body>
