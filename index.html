@@ -22,6 +22,9 @@
         input { width: 100%; padding: 15px; margin: 20px 0; background: #1c2130; border: 1px solid #2a3040; color: white; border-radius: 12px; outline: none; font-family: 'DM Mono'; }
         button { width: 100%; padding: 16px; background: var(--accent); color: #0a0d10; border: none; border-radius: 12px; font-family: 'Bebas Neue'; font-size: 1.4rem; cursor: pointer; }
         
+        /* Logout styling */
+        .logout-link { color: var(--danger); font-size: 0.6rem; text-decoration: underline; cursor: pointer; margin-left: 10px; text-transform: uppercase; }
+
         #game { display: none; flex: 1; flex-direction: column; padding: 10px; }
         .player-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
         .player-node { background: var(--surface); padding: 10px; border-radius: 10px; min-width: 100px; text-align: center; border: 1px solid transparent; }
@@ -38,7 +41,10 @@
     <div id="lobby">
         <div class="card">
             <h1>DRANKSPEL</h1>
-            <p id="user-welcome"></p>
+            <div style="margin-bottom: 15px; display: flex; justify-content: center; align-items: center;">
+                <span id="user-welcome" style="font-size: 0.7rem; color: var(--muted);"></span>
+                <span class="logout-link" onclick="doLogout()">Uitloggen</span>
+            </div>
             <input type="text" id="name-input" placeholder="Je naam...">
             <button onclick="joinGame()">SPELEN</button>
             <div id="error-msg" style="color:red; font-size: 12px; margin-top:10px;"></div>
@@ -69,13 +75,22 @@
 
         async function checkAuth() {
             const { data: { session } } = await sb.auth.getSession();
-            if (!session) { window.location.href = 'auth.html'; }
-            else { 
+            if (!session) { 
+                window.location.href = 'auth.html'; 
+            } else { 
                 currentUser = session.user;
-                document.getElementById('user-welcome').innerText = "Hoi " + (currentUser.user_metadata.username || "Speler");
+                const username = currentUser.user_metadata.username || "Speler";
+                document.getElementById('user-welcome').innerText = "HOI " + username.toUpperCase();
+                document.getElementById('name-input').value = username;
             }
         }
         checkAuth();
+
+        // UITLOG FUNCTIE
+        async function doLogout() {
+            await sb.auth.signOut();
+            window.location.href = 'auth.html';
+        }
 
         function joinGame() {
             const name = document.getElementById('name-input').value;
@@ -105,7 +120,7 @@
                     if (!card) return;
                     const cNode = document.createElement('div');
                     cNode.className = `card-item ${selectedIndices.includes(i) ? 'selected' : ''}`;
-                    cNode.innerText = card.v + card.s;
+                    cNode.innerText = card.v + (card.s || '');
                     cNode.onclick = () => {
                         if (selectedIndices.includes(i)) selectedIndices = selectedIndices.filter(x => x !== i);
                         else selectedIndices.push(i);
