@@ -8,9 +8,8 @@ const io = new Server(server);
 
 app.use(express.static(__dirname));
 
-// ── GAME STATE (ROOMS) ──
-const rooms = {};       // roomCode -> gameState
-const socketRooms = {}; // socket.id -> roomCode
+const rooms = {};
+const socketRooms = {};
 
 function createGameState(hostId, roomCode) {
     return {
@@ -35,7 +34,6 @@ function createGameState(hostId, roomCode) {
     };
 }
 
-// ── HELPERS ──
 const suits = ['♥', '♦', '♣', '♠'];
 
 function buildDeck() {
@@ -125,7 +123,7 @@ function resetRound(g) {
     g.roundState = 'DISCARD';
     g.lastDiscard = { type: null, cards: [], player: null };
     g.lastDiscardCount = 0;
-    g.lastActionText = 'Ronde gestart!';
+    g.lastActionText = 'Nieuwe ronde!';
     g.status = 'PLAYING';
     g.revealData = null;
     g.pendingLosers = [];
@@ -164,13 +162,7 @@ function resolveRound(g, callerId) {
         }
         g.totals[id] = (g.totals[id] || 0) + ptsThisRound;
         if (g.totals[id] >= g.rules.limit) g.pendingLosers.push(id);
-        results[id] = {
-            score: scores[id],
-            ptsThisRound,
-            total: g.totals[id],
-            badge,
-            hand: g.players[id].hand.filter(x => x),
-        };
+        results[id] = { score: scores[id], ptsThisRound, total: g.totals[id], badge, hand: g.players[id].hand.filter(x => x) };
     });
 
     g.revealData = { caller: callerId, results, kamoFail };
@@ -187,7 +179,6 @@ io.on("connection", (socket) => {
         } else if (!rooms[roomCode]) {
             return socket.emit('error', 'Lobby bestaat niet!');
         }
-
         const g = rooms[roomCode];
         socket.join(roomCode);
         socketRooms[socket.id] = roomCode;
@@ -200,7 +191,7 @@ io.on("connection", (socket) => {
     socket.on("updateRules", (rulesData) => {
         const g = rooms[socketRooms[socket.id]];
         if (g && socket.id === g.hostId) {
-            g.rules = { limit: parseInt(rulesData.limit), straf: { n: parseInt(rulesData.strafN), t: rulesData.strafT } };
+            g.rules = { limit: parseInt(rulesData.limit), straf: { n: 5, t: 'slokken' } };
             sendState(g);
         }
     });
@@ -219,7 +210,7 @@ io.on("connection", (socket) => {
         let type = null;
         if (cards.every(c => c.v === cards[0].v)) type = 'set';
         else if (isStraight(cards)) type = 'straight';
-        else return socket.emit('actionError', 'ONGELDIGE COMBINATIE!');
+        else return socket.emit('actionError', 'ONGELDIGE COMBO!');
 
         g.tableStack.push(...cards);
         g.lastDiscardCount = cards.length;
@@ -237,14 +228,13 @@ io.on("connection", (socket) => {
     socket.on("drawFromDeck", () => {
         const g = rooms[socketRooms[socket.id]];
         if (!g || g.status !== 'PLAYING' || socket.id !== g.turn || g.roundState !== 'DRAW') return;
-
         if (g.deck.length === 0) reshuffleDeck(g);
         const card = g.deck.pop();
 
         if (g.lastDiscard?.type === 'set' && g.lastDiscard.player === socket.id && card.v === g.lastDiscard.cards[0].v) {
             g.tableStack.push(card);
             g.lastDiscardCount++;
-            g.lastActionText = `${g.players[socket.id].name} trok een ${cardLabel(card.v)} en gooide deze direct bij!`;
+            g.lastActionText = `${g.players[socket.id].name} trok ${cardLabel(card.v)} en gooide direct op!`;
             return nextTurn(g);
         }
 
@@ -260,12 +250,11 @@ io.on("connection", (socket) => {
         if (!g || g.status !== 'PLAYING' || socket.id !== g.turn || g.roundState !== 'DRAW') return;
         const available = g.tableStack.length - g.lastDiscardCount;
         if (available <= 0) return socket.emit('actionError', 'PAK VAN HET DECK!');
-        
         const card = g.tableStack.splice(available - 1, 1)[0];
         const hand = g.players[socket.id].hand;
         const slot = hand.indexOf(null);
         if (slot !== -1) hand[slot] = card; else hand.push(card);
-        g.lastActionText = `${g.players[socket.id].name} pakte van de open stapel.`;
+        g.lastActionText = `${g.players[socket.id].name} pakte open kaart.`;
         nextTurn(g);
     });
 
@@ -275,13 +264,12 @@ io.on("connection", (socket) => {
         const hand = g.players[socket.id].hand;
         const c = hand[index];
         if (!c || g.lastDiscard?.type !== 'straight') return;
-
-        const highest = g.lastDiscard.cards.slice().sort((a,b)=>a.v - b.v).pop();
-        if (c.s === highest.s && c.v === highest.v + 1) {
+        const high = g.lastDiscard.cards.slice().sort((a,b)=>a.v - b.v).pop();
+        if (c.s === high.s && c.v === high.v + 1) {
             g.tableStack.push(c);
             g.lastDiscard.cards.push(c);
             g.lastDiscardCount++;
-            g.lastActionText = `${g.players[socket.id].name} VIEL IN met ${cardLabel(c.v)}${c.s}!`;
+            g.lastActionText = `${g.players[socket.id].name} VIEL IN!`;
             hand.splice(index, 1);
             sendState(g);
         }
@@ -294,13 +282,13 @@ io.on("connection", (socket) => {
 
     socket.on("nextRound", () => {
         const g = rooms[socketRooms[socket.id]];
-        if (g && socket.id === g.hostId && g.status === 'REVEAL') resetRound(g);
+        if (g && socket.id === g.hostId) resetRound(g);
     });
 
     socket.on("newGame", () => {
         const g = rooms[socketRooms[socket.id]];
         if (g && socket.id === g.hostId) {
-            g.playerOrder.forEach(id => { g.totals[id] = 0; });
+            g.playerOrder.forEach(id => g.totals[id] = 0);
             g.status = 'LOBBY';
             sendState(g);
         }
@@ -311,7 +299,6 @@ io.on("connection", (socket) => {
         if (rc && rooms[rc]) {
             const g = rooms[rc];
             g.playerOrder = g.playerOrder.filter(id => id !== socket.id);
-            delete g.players[socket.id];
             if (g.playerOrder.length === 0) delete rooms[rc];
             else { if (g.hostId === socket.id) g.hostId = g.playerOrder[0]; sendState(g); }
         }
@@ -319,5 +306,4 @@ io.on("connection", (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ Server poort ${PORT}`));
+server.listen(3000, () => console.log("Server running"));
