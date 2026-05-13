@@ -1,12 +1,18 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.static(__dirname));
+
+// ── SUPABASE CONFIG ──
+const SUPABASE_URL = 'https://caossvejzjutuwqsjdxc.supabase.co';
+const SUPABASE_KEY = 'JOUW_SECRET_SERVICE_ROLE_KEY'; // <── VUL HIER JE SERVICE ROLE KEY IN
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── GAME STATE ──
 let gameState = {
@@ -30,6 +36,20 @@ let gameState = {
 // ── HELPERS ──
 const suits = ['♥', '♦', '♣', '♠'];
 
+async function getPremiumStatus(socketId) {
+    const player = gameState.players[socketId];
+    if (!player || !player.supabaseId) return false;
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('is_premium')
+        .eq('id', player.supabaseId)
+        .single();
+    
+    if (error) return false;
+    return data?.is_premium || false;
+}
+
 function buildDeck() {
     let d = [];
     for (let v = 1; v <= 13; v++) for (let s of suits) d.push({ v, s });
@@ -48,7 +68,6 @@ function calcHand(hand) {
 }
 
 function sendState() {
-    // Each player gets a view where only THEIR hand is visible; others show count only
     const g = gameState;
     g.playerOrder.forEach(id => {
         const view = {
@@ -69,7 +88,8 @@ function sendState() {
             view.players[pid] = {
                 name: g.players[pid].name,
                 handCount: g.players[pid].hand.filter(x => x).length,
-                hand: pid === id ? g.players[pid].hand : null, // only own hand
+                hand: pid === id ? g.players[pid].hand : null,
+                isPremium: g.players[pid].isPremium || false
             };
         });
         io.to(id).emit('updateState', view);
@@ -149,16 +169,31 @@ function resolveRound(callerId) {
 io.on("connection", (socket) => {
     console.log("Connected:", socket.id);
 
-    socket.on("joinGame", ({ name }) => {
+    // userId komt van de Supabase auth op de frontend
+    socket.on("joinGame", async ({ name, userId }) => {
         const g = gameState;
         if (g.status !== 'LOBBY') {
             socket.emit('error', 'Spel is al bezig');
             return;
         }
-        g.players[socket.id] = { id: socket.id, name: name || "Speler", hand: [] };
+
+        // Sla speler op met hun Supabase ID
+        g.players[socket.id] = { 
+            id: socket.id, 
+            supabaseId: userId, 
+            name: name || "Speler", 
+            hand: [],
+            isPremium: false 
+        };
+
+        // Check direct premium status in DB
+        const isPremium = await getPremiumStatus(socket.id);
+        g.players[socket.id].isPremium = isPremium;
+
         if (!g.playerOrder.includes(socket.id)) g.playerOrder.push(socket.id);
         g.totals[socket.id] = 0;
         g.extraCards[socket.id] = 0;
+        
         if (!g.hostId) g.hostId = socket.id;
         sendState();
     });
@@ -173,13 +208,22 @@ io.on("connection", (socket) => {
         sendState();
     });
 
-    socket.on("startGame", () => {
+    socket.on("startGame", async () => {
         const g = gameState;
         if (socket.id !== g.hostId) return;
+        
         if (g.playerOrder.length < 2) {
             socket.emit('error', 'Minimaal 2 spelers nodig');
             return;
         }
+
+        // PREMIUM CHECK VOOR SPELERS LIMIET
+        const hostIsPremium = await getPremiumStatus(g.hostId);
+        if (!hostIsPremium && g.playerOrder.length > 4) {
+            socket.emit('error', 'Gratis versie: maximaal 4 spelers. De host moet Premium hebben voor meer!');
+            return;
+        }
+
         resetRound();
     });
 
@@ -192,25 +236,19 @@ io.on("connection", (socket) => {
         const hand = g.players[socket.id].hand;
         if (!indices || !indices.length) return;
 
-        // Haal de kaarten op via de indices
         const cards = indices.map(i => hand[i]).filter(c => c !== null && c !== undefined);
         if (!cards.length) return;
 
-        // Valideer: alle kaarten moeten dezelfde waarde hebben
         if (!cards.every(c => c.v === cards[0].v)) {
             socket.emit('actionError', 'ALLEEN DEZELFDE KAARTEN!');
             return;
         }
 
-        // Leg op de open stapel
         g.tableStack.push(...cards);
         g.lastDiscardCount = cards.length;
 
-        // Verwijder uit hand: sorteer indices van hoog naar laag zodat splice
-        // de lagere indices niet verschuift. De LAAGSTE index wordt null (lege slot),
-        // hogere duplicaat-indices worden er uitgespliced.
         const sortedDesc = [...indices].sort((a, b) => b - a);
-        const lowestIdx  = sortedDesc[sortedDesc.length - 1]; // laagste = laatste na desc sort
+        const lowestIdx  = sortedDesc[sortedDesc.length - 1];
         sortedDesc.forEach(i => {
             if (i === lowestIdx) hand[i] = null;
             else hand.splice(i, 1);
@@ -278,7 +316,6 @@ io.on("connection", (socket) => {
 
     socket.on("newGame", () => {
         if (socket.id !== gameState.hostId) return;
-        // Reset everything except player list
         const g = gameState;
         g.playerOrder.forEach(id => {
             g.totals[id] = 0;
