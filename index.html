@@ -16,48 +16,47 @@
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg); color: var(--text); margin: 0; font-family: 'DM Mono', monospace; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
-        
-        /* LOBBY & MENU */
         #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 2000; display: flex; flex-direction: column; justify-content: center; padding: 25px; }
         .menu-card { background: var(--surface); padding: 25px; border-radius: 20px; border: 1px solid #1e2535; width: 100%; max-width: 400px; margin: auto; text-align: center; }
         .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-family: 'Bebas Neue'; font-size: 1.3rem; cursor: pointer; margin-top: 10px; }
         .btn-accent { background: var(--accent); color: #000; }
         .btn-danger { background: var(--danger); color: #fff; }
-        input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #2a3040; background: var(--surface2); color: white; text-align: center; margin-top: 10px; }
-
-        /* GAME UI */
+        input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #2a3040; background: var(--surface2); color: white; text-align: center; margin-top: 10px; font-size: 1.2rem; }
         .top-bar { display: grid; grid-auto-flow: column; gap: 6px; padding: 8px; background: var(--surface); border-bottom: 1px solid #1e2535; }
         .score-pill { background: var(--surface2); padding: 6px; border-radius: 8px; text-align: center; border-bottom: 2px solid #2a3040; }
         .active-player { border-bottom-color: var(--accent) !important; }
         .card { width: var(--card-w); height: var(--card-h); background: #fff; border-radius: 6px; position: absolute; color: #000; display: flex; flex-direction: column; padding: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        .card.red { color: var(--danger); }
         .card.back { background: #1e3a5f; border: 1px solid var(--accent); }
         .card.selected { transform: translateY(-20px) !important; border: 2px solid var(--accent) !important; }
         #game-area { flex: 1; position: relative; display: flex; flex-direction: column; justify-content: space-around; align-items: center; }
         .stacks-row { display: flex; gap: 15vw; }
         #player-hand { display: flex; gap: 5px; height: var(--card-h); }
-        #reveal-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 3000; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
+        #reveal-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 3000; display: none; flex-direction: column; padding: 20px; }
+        .lobby-player-item { background: var(--surface2); padding: 8px; border-radius: 8px; margin-top: 5px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
 <div id="setup-menu">
     <div class="menu-card">
-        <h1 style="font-family:'Bebas Neue'; color:var(--accent); font-size: 3rem;">DRANKSPEL</h1>
-        <p id="welcome-text" style="font-size: 0.7rem; color: var(--muted);"></p>
+        <h1 style="font-family:'Bebas Neue'; color:var(--accent); font-size: 3rem; margin: 0;">DRANKSPEL</h1>
+        <p id="welcome-text" style="font-size: 0.7rem; color: var(--muted); margin-bottom: 20px;"></p>
         
         <div id="join-options">
             <button class="btn btn-accent" onclick="createRoom()">NIEUW SPEL STARTEN</button>
-            <div style="margin-top: 20px;">
-                <input id="code-input" type="number" placeholder="4-CIJFERIGE CODE">
-                <button class="btn btn-accent" onclick="joinRoom()">JOIN VRIEND</button>
+            <div style="margin-top: 25px; border-top: 1px solid #1e2535; padding-top: 20px;">
+                <p style="font-size: 0.6rem; color: var(--muted);">JOIN EEN VRIEND</p>
+                <input id="code-input" type="number" placeholder="CODE (4 CIJFERS)" oninput="if(this.value.length > 4) this.value = this.value.slice(0,4);">
+                <button class="btn btn-accent" onclick="joinRoom()">JOIN LOBBY</button>
             </div>
-            <p onclick="doLogout()" style="color:var(--danger); cursor:pointer; font-size:0.6rem; margin-top:20px;">UITLOGGEN</p>
+            <p onclick="doLogout()" style="color:var(--danger); cursor:pointer; font-size:0.6rem; margin-top:30px; text-decoration: underline;">UITLOGGEN</p>
         </div>
 
         <div id="lobby-section" style="display:none;">
-            <p style="color:var(--muted); font-size:0.6rem;">CODE VOOR VRIENDEN:</p>
-            <h2 id="display-code" style="font-family:'Bebas Neue'; font-size:3rem; color:var(--accent); margin:10px 0;">0000</h2>
-            <div id="lobby-players" style="margin-bottom:20px;"></div>
+            <p style="color:var(--muted); font-size:0.6rem; margin:0;">CODE VOOR VRIENDEN:</p>
+            <h2 id="display-code" style="font-family:'Bebas Neue'; font-size:3.5rem; color:var(--accent); margin:5px 0;">----</h2>
+            <div id="lobby-players" style="margin-bottom:20px; max-height: 150px; overflow-y: auto;"></div>
             <button id="start-btn" class="btn btn-accent" onclick="startGame()" disabled>WACHT OP SPELERS...</button>
         </div>
     </div>
@@ -71,7 +70,7 @@
 
 <div class="top-bar" id="top-bar"></div>
 <div id="game-area">
-    <div id="status"></div>
+    <div id="status" style="font-size: 0.7rem; color: var(--accent);"></div>
     <div class="stacks-row">
         <div onclick="socket.emit('drawFromDeck')" style="position:relative; width:var(--card-w); height:var(--card-h);">
             <div class="card back"></div>
@@ -95,22 +94,40 @@ let myId, myState, currentUser, selected = [];
 
 async function checkAuth() {
     const { data: { session } } = await sb.auth.getSession();
-    if (!session) window.location.href = 'auth.html';
-    currentUser = session.user;
-    document.getElementById('welcome-text').innerText = "INGELOGD ALS: " + (currentUser.user_metadata.username || "SPELER");
+    if (!session) {
+        window.location.href = 'auth.html';
+    } else {
+        currentUser = session.user;
+        const name = currentUser.user_metadata.username || "SPELER";
+        document.getElementById('welcome-text').innerText = "INGELOGD ALS: " + name.toUpperCase();
+    }
 }
 checkAuth();
 
 async function doLogout() { await sb.auth.signOut(); window.location.href = 'auth.html'; }
 
+function createCardEl(c, isMini = false, offset = 0) {
+    const div = document.createElement('div');
+    const type = !c ? 'back' : (c.v === 0 ? 'joker' : (c.v === 11 ? 'special' : (c.s === '♥' || c.s === '♦' ? 'red' : 'black')));
+    div.className = `card ${type} ${isMini ? 'mini-card' : ''}`;
+    if (!isMini && offset > 0) div.style.transform = `translate(${offset*1.5}px, ${offset*1.5}px)`;
+    if (c) {
+        const val = c.v === 1 ? 'A' : c.v === 11 ? 'B' : c.v === 12 ? 'V' : c.v === 13 ? 'H' : c.v === 0 ? 'J' : c.v;
+        div.innerHTML = `<div class="card-corner" style="font-size:2vw">${val}<br>${c.s||''}</div><div class="card-center" style="font-size:5vw">${c.s||'JK'}</div>`;
+    }
+    return div;
+}
+
 function createRoom() {
-    console.log("Create room button clicked");
+    if (!currentUser) return alert("Je bent niet ingelogd!");
     socket.emit('createRoom', { userId: currentUser.id });
 }
 
 function joinRoom() {
-    const code = document.getElementById('code-input').value;
-    if (code.length === 4) socket.emit('joinRoom', { code, userId: currentUser.id });
+    const codeInput = document.getElementById('code-input');
+    const code = codeInput.value;
+    if (code.length !== 4) return alert("Voer een 4-cijferige code in!");
+    socket.emit('joinRoom', { code: code, userId: currentUser.id });
 }
 
 function startGame() { socket.emit('startGame'); }
@@ -122,9 +139,16 @@ socket.on('updateState', (state) => {
         document.getElementById('join-options').style.display = 'none';
         document.getElementById('lobby-section').style.display = 'block';
         document.getElementById('display-code').innerText = state.myRoomCode;
-        document.getElementById('lobby-players').innerHTML = state.playerOrder.map(id => `<p>${state.players[id].name}</p>`).join('');
-        document.getElementById('start-btn').disabled = state.playerOrder.length < 2;
-        document.getElementById('start-btn').innerText = (socket.id === state.hostId) ? "SPEL STARTEN" : "WACHT OP HOST...";
+        document.getElementById('lobby-players').innerHTML = state.playerOrder.map(id => `<div class="lobby-player-item">${state.players[id].name} ${id === state.hostId ? '⭐' : ''}</div>`).join('');
+        
+        const startBtn = document.getElementById('start-btn');
+        if (socket.id === state.hostId) {
+            startBtn.disabled = state.playerOrder.length < 2;
+            startBtn.innerText = "SPEL STARTEN";
+        } else {
+            startBtn.disabled = true;
+            startBtn.innerText = "WACHT OP HOST...";
+        }
     } else if (state.status === 'PLAYING') {
         renderGame(state);
     } else if (state.status === 'REVEAL') {
@@ -139,21 +163,19 @@ function renderGame(state) {
     tb.innerHTML = state.playerOrder.map(id => `<div class="score-pill ${id === state.turn ? 'active-player' : ''}"><div class="name">${state.players[id].name}</div><div class="pts">${state.totals[id]}</div></div>`).join('');
     
     const os = document.getElementById('open-stack');
-    os.innerHTML = '';
-    state.tableStack.slice(-6).forEach((c, i) => {
-        const el = document.createElement('div');
-        el.className = 'card ' + (c.s === '♥' || c.s === '♦' ? 'red' : 'black');
-        el.style.transform = `translate(${i*2}px, ${i*2}px)`;
-        el.innerHTML = `<div style="font-size:2vw;">${c.v}</div><div>${c.s}</div>`;
+    os.innerHTML = '<span class="stack-label">OPEN</span>';
+    const visible = state.tableStack.slice(-6);
+    visible.forEach((c, i) => {
+        const el = createCardEl(c, false, i);
         os.appendChild(el);
     });
 
     const handDiv = document.getElementById('player-hand');
     handDiv.innerHTML = '';
-    state.players[socket.id].hand.forEach((c, i) => {
-        const el = document.createElement('div');
-        el.className = 'card ' + (selected.includes(i) ? 'selected' : '');
-        el.innerHTML = `<div>${c.v}</div><div>${c.s}</div>`;
+    const myHand = state.players[socket.id].hand;
+    myHand.forEach((c, i) => {
+        const el = createCardEl(c);
+        if (selected.includes(i)) el.classList.add('selected');
         el.onclick = () => {
             if (state.turn !== socket.id || state.roundState !== 'DISCARD') return;
             selected = selected.includes(i) ? selected.filter(x => x !== i) : [...selected, i];
@@ -165,6 +187,7 @@ function renderGame(state) {
         handDiv.appendChild(wrap);
     });
 
+    document.getElementById('status').innerText = state.turn === socket.id ? "JOUW BEURT!" : `WACHTEN OP ${state.players[state.turn].name.toUpperCase()}...`;
     document.getElementById('call-btn').style.display = (state.turn === socket.id && state.roundState === 'DISCARD') ? 'block' : 'none';
     document.getElementById('action-btn').style.visibility = selected.length > 0 ? 'visible' : 'hidden';
 }
@@ -172,6 +195,21 @@ function renderGame(state) {
 function confirmDiscard() {
     socket.emit('discard', { indices: selected });
     selected = [];
+}
+
+function renderReveal(state) {
+    document.getElementById('reveal-overlay').style.display = 'flex';
+    const grid = document.getElementById('reveal-grid');
+    grid.innerHTML = '';
+    state.playerOrder.forEach(id => {
+        const res = state.revealData.results[id];
+        const box = document.createElement('div');
+        box.style = "background:var(--surface2); padding:10px; border-radius:10px; text-align:center;";
+        box.innerHTML = `<div style="font-family:'Bebas Neue';">${state.players[id].name}</div><div style="color:var(--accent); font-family:'Bebas Neue'; font-size:1.5rem;">${res.ptsThisRound} PT</div><div style="display:flex; justify-content:center; gap:3px; margin-top:5px; flex-wrap:wrap;"></div>`;
+        res.hand.forEach(c => box.lastChild.appendChild(createCardEl(c, true)));
+        grid.appendChild(box);
+    });
+    document.getElementById('next-round-btn').style.display = (socket.id === state.hostId) ? 'block' : 'none';
 }
 
 socket.on('error', (msg) => alert(msg));
