@@ -2,12 +2,23 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { createClient } = require('@supabase/supabase-js');
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Statische bestanden serveren
 app.use(express.static(__dirname));
+
+// FORCED ROUTES (Lost de "cannot GET" op)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/auth.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'auth.html'));
+});
 
 // ── SUPABASE CONFIG ──
 const SUPABASE_URL = 'https://caossvejzjutuwqsjdxc.supabase.co';
@@ -38,13 +49,15 @@ const suits = ['♥', '♦', '♣', '♠'];
 
 async function getPremiumStatus(userId) {
     if (!userId) return false;
-    const { data, error } = await supabase
-        .from('profiles')
-        .select('is_premium')
-        .eq('id', userId)
-        .single();
-    if (error) return false;
-    return data?.is_premium || false;
+    try {
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('is_premium')
+            .eq('id', userId)
+            .single();
+        if (error) return false;
+        return data?.is_premium || false;
+    } catch (e) { return false; }
 }
 
 function buildDeck() {
@@ -167,9 +180,8 @@ io.on("connection", (socket) => {
         if (socket.id !== g.hostId) return;
         if (g.playerOrder.length < 2) return socket.emit('error', 'Minimaal 2 spelers nodig');
 
-        const hostPremium = g.players[socket.id].isPremium;
-        if (!hostPremium && g.playerOrder.length > 4) {
-            return socket.emit('error', 'Gratis limiet: max 4 spelers. De host heeft Premium nodig voor meer!');
+        if (!g.players[socket.id].isPremium && g.playerOrder.length > 4) {
+            return socket.emit('error', 'Gratis limiet: max 4 spelers. Host moet Premium hebben voor meer!');
         }
         resetRound();
     });
