@@ -3,273 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Drankspel — Inloggen</title>
+    <title>Drankspel Online</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --accent: #00ffcc; --danger: #ff3366; --warn: #ffcc00;
-            --bg: #0a0d10; --surface: #131720; --surface2: #1c2130;
+            --accent: #00ffcc; --danger: #ff3366; --bg: #0a0d10; --surface: #131720;
             --text: #e8eaf0; --muted: #5a6480;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
-
         body {
-            background: var(--bg); color: var(--text);
-            font-family: 'DM Mono', monospace;
-            min-height: 100dvh; display: flex; flex-direction: column;
-            justify-content: center; align-items: center; padding: 24px;
-            background-image:
-                radial-gradient(ellipse at 20% 0%, rgba(0,255,204,0.05) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 100%, rgba(255,51,102,0.05) 0%, transparent 60%);
+            background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace;
+            overflow: hidden; height: 100dvh; display: flex; flex-direction: column;
         }
 
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
+        /* LOBBY STYLE */
+        #lobby {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
         }
-        @keyframes pulse {
-            0%,100% { opacity: 1; } 50% { opacity: 0.4; }
-        }
-
-        .wrap {
-            width: 100%; max-width: 400px;
-            animation: fadeUp 0.4s ease both;
-        }
-
-        .logo {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 3.2rem; letter-spacing: 0.12em;
-            color: var(--accent); text-align: center; line-height: 1;
-        }
-        .logo-sub {
-            text-align: center; font-size: 0.55rem; color: var(--muted);
-            letter-spacing: 0.18em; margin-bottom: 28px; margin-top: 4px;
-        }
-
-        /* ── TABS ── */
-        .tabs {
-            display: flex; background: var(--surface2);
-            border-radius: 12px; padding: 4px; margin-bottom: 20px;
-        }
-        .tab {
-            flex: 1; padding: 10px; border: none; background: transparent;
-            color: var(--muted); font-family: 'Bebas Neue', sans-serif;
-            font-size: 1rem; letter-spacing: 0.08em; cursor: pointer;
-            border-radius: 9px; transition: all 0.2s;
-        }
-        .tab.active {
-            background: var(--surface); color: var(--accent);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        }
-
-        /* ── CARD ── */
         .card {
-            background: var(--surface); border: 1px solid #1e2535;
-            border-radius: 20px; padding: 24px;
+            background: var(--surface); padding: 30px; border-radius: 20px; width: 100%; max-width: 400px;
+            border: 1px solid #1e2535; text-align: center;
+        }
+        h1 { font-family: 'Bebas Neue', sans-serif; font-size: 3.5rem; color: var(--accent); margin-bottom: 10px; }
+        input {
+            width: 100%; padding: 15px; margin: 20px 0; background: #1c2130; border: 1px solid #2a3040;
+            color: white; border-radius: 12px; outline: none; font-family: 'DM Mono';
+        }
+        button {
+            width: 100%; padding: 16px; background: var(--accent); color: #0a0d10; border: none;
+            border-radius: 12px; font-family: 'Bebas Neue'; font-size: 1.4rem; cursor: pointer;
+        }
+        .premium-badge {
+            display: inline-block; padding: 4px 8px; background: gold; color: black;
+            font-size: 0.6rem; border-radius: 4px; font-weight: bold; margin-left: 5px;
         }
 
-        .field-group { margin-bottom: 16px; }
-        .field-label {
-            display: block; font-size: 0.52rem; color: var(--accent);
-            letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 6px;
+        /* GAME LAYOUT (Versimpeld voor overzicht) */
+        #game { display: none; flex: 1; flex-direction: column; padding: 10px; }
+        .player-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
+        .player-node { background: var(--surface); padding: 10px; border-radius: 10px; min-width: 100px; text-align: center; border: 1px solid transparent; }
+        .player-node.active { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,255,204,0.3); }
+        
+        #table-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
+        #hand { display: flex; justify-content: center; gap: 5px; padding: 20px; }
+        .card-item {
+            width: 60px; height: 90px; background: white; color: black; border-radius: 8px;
+            display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem;
+            transition: transform 0.2s; cursor: pointer;
         }
-        input[type=text], input[type=email], input[type=password] {
-            width: 100%; padding: 12px 14px;
-            background: var(--surface2); border: 1px solid #2a3040;
-            color: var(--text); border-radius: 10px;
-            font-family: 'DM Mono', monospace; font-size: 0.85rem;
-            outline: none; transition: border-color 0.2s;
-            -webkit-appearance: none;
-        }
-        input:focus { border-color: var(--accent); }
+        .card-item.selected { transform: translateY(-20px); border: 3px solid var(--accent); }
 
-        .submit-btn {
-            width: 100%; padding: 16px; border: none; border-radius: 13px;
-            background: var(--accent); color: #0a0d10;
-            font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem;
-            letter-spacing: 0.1em; cursor: pointer; margin-top: 6px;
-            transition: transform 0.1s, filter 0.15s;
-        }
-        .submit-btn:active  { transform: scale(0.97); }
-        .submit-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
-
-        .msg {
-            font-size: 0.6rem; text-align: center; margin-top: 10px;
-            min-height: 16px; letter-spacing: 0.05em;
-        }
-        .msg.error   { color: var(--danger); }
-        .msg.success { color: var(--accent); }
-
-        .rules-hint {
-            font-size: 0.5rem; color: var(--muted); text-align: center;
-            margin-top: 20px; line-height: 1.9; letter-spacing: 0.04em;
-        }
-
-        /* ── LOADING DOT ── */
-        .loading { animation: pulse 1s infinite; }
-
-        /* ── PREMIUM BADGE ── */
-        .premium-note {
-            background: rgba(255,204,0,0.08); border: 1px solid rgba(255,204,0,0.2);
-            border-radius: 10px; padding: 10px 14px; margin-bottom: 16px;
-            font-size: 0.55rem; color: var(--warn); letter-spacing: 0.06em;
-            line-height: 1.7; text-align: center;
-        }
+        #error-msg { color: var(--danger); font-size: 0.8rem; margin-top: 10px; }
     </style>
 </head>
 <body>
-<div class="wrap">
-    <div class="logo">DRANKSPEL</div>
-    <div class="logo-sub">ONLINE MULTIPLAYER · ACCOUNT VEREIST</div>
 
-    <div class="tabs">
-        <button class="tab active" id="tab-login"    onclick="switchTab('login')">INLOGGEN</button>
-        <button class="tab"        id="tab-register" onclick="switchTab('register')">REGISTREREN</button>
-    </div>
-
-    <div class="card">
-        <!-- LOGIN -->
-        <div id="form-login">
-            <div class="field-group">
-                <span class="field-label">E-mailadres</span>
-                <input type="email" id="login-email" placeholder="jouw@email.nl" autocomplete="email">
-            </div>
-            <div class="field-group">
-                <span class="field-label">Wachtwoord</span>
-                <input type="password" id="login-pw" placeholder="••••••••" autocomplete="current-password">
-            </div>
-            <button class="submit-btn" id="login-btn" onclick="doLogin()">INLOGGEN</button>
-            <div class="msg" id="login-msg"></div>
-        </div>
-
-        <!-- REGISTER -->
-        <div id="form-register" style="display:none;">
-            <div class="premium-note">
-                🎉 Gratis account: max 4 spelers<br>
-                ⭐ Premium (€4,99 eenmalig): onbeperkt + extra modi
-            </div>
-            <div class="field-group">
-                <span class="field-label">Gebruikersnaam</span>
-                <input type="text" id="reg-name" placeholder="Jouw naam..." maxlength="14">
-            </div>
-            <div class="field-group">
-                <span class="field-label">E-mailadres</span>
-                <input type="email" id="reg-email" placeholder="jouw@email.nl" autocomplete="email">
-            </div>
-            <div class="field-group">
-                <span class="field-label">Wachtwoord</span>
-                <input type="password" id="reg-pw" placeholder="Min. 6 tekens" autocomplete="new-password">
-            </div>
-            <button class="submit-btn" id="reg-btn" onclick="doRegister()">ACCOUNT AANMAKEN</button>
-            <div class="msg" id="reg-msg"></div>
+    <div id="lobby">
+        <div class="card">
+            <h1>DRANKSPEL</h1>
+            <p id="user-welcome" style="font-size: 0.7rem; color: var(--muted);"></p>
+            <input type="text" id="name-input" placeholder="Vul je naam in...">
+            <button onclick="joinGame()">DEELNEMEN</button>
+            <div id="error-msg"></div>
+            <div id="player-count" style="margin-top: 15px; font-size: 0.7rem; color: var(--muted);"></div>
         </div>
     </div>
 
-    <div class="rules-hint">
-        BOER = −1 · AAS = 1 · CIJFERS = WAARDE · VROUW/HEER = 10 · JOKER = 0<br>
-        CALL BIJ 5 PUNTEN OF MINDER · FOUTE CALL = +20 STRAF + EXTRA KAART
+    <div id="game">
+        <div class="player-list" id="player-list"></div>
+        
+        <div id="table-area">
+            <div style="color: var(--muted); font-size: 0.7rem;">STAPEL</div>
+            <div id="table-stack" style="display: flex; gap: 10px;"></div>
+            
+            <div id="game-controls">
+                <button id="draw-deck-btn" onclick="drawFromDeck()" style="width: auto; padding: 10px 20px; display: none;">PAK VAN DECK</button>
+                <button id="draw-open-btn" onclick="drawFromOpen()" style="width: auto; padding: 10px 20px; display: none; background: var(--muted);">PAK OPEN</button>
+                <button id="call-btn" onclick="callKamo()" style="width: auto; padding: 10px 20px; display: none; background: var(--danger); color: white;">CALL KAMO!</button>
+            </div>
+        </div>
+
+        <div id="hand-container">
+            <div id="hand-label" style="text-align: center; color: var(--accent); font-size: 0.8rem; margin-bottom: 5px;"></div>
+            <div id="hand"></div>
+            <button id="discard-btn" onclick="discard()" style="display: none;">GOOI KAARTEN</button>
+        </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-// ── CONFIG ──
-const SUPABASE_URL  = 'https://caossvejzjutuwqsjdxc.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_-I-ilTRgOdHHcHv2s7rJ7g_ecncNr46';
-const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const socket = io();
+        
+        // ── SUPABASE AUTH ──
+        const SUPABASE_URL  = 'https://caossvejzjutuwqsjdxc.supabase.co';
+        const SUPABASE_ANON = 'sb_publishable_-I-ilTRgOdHHcHv2s7rJ7g_ecncNr46';
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// ── Check of al ingelogd ──
-(async () => {
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) window.location.href = '/index.html';
-})();
+        let currentUser = null;
+        let selectedIndices = [];
 
-// ── TABS ──
-function switchTab(tab) {
-    document.getElementById('form-login').style.display    = tab === 'login'    ? 'block' : 'none';
-    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
-    document.getElementById('tab-login').classList.toggle('active',    tab === 'login');
-    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
-}
+        // Check login status direct bij opstarten
+        async function checkAuth() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                window.location.href = 'auth.html';
+            } else {
+                currentUser = session.user;
+                document.getElementById('user-welcome').innerText = `Ingelogd als ${currentUser.user_metadata.username || currentUser.email}`;
+                if (currentUser.user_metadata.username) {
+                    document.getElementById('name-input').value = currentUser.user_metadata.username;
+                }
+            }
+        }
+        checkAuth();
 
-// ── LOGIN ──
-async function doLogin() {
-    const email = document.getElementById('login-email').value.trim();
-    const pw    = document.getElementById('login-pw').value;
-    const msg   = document.getElementById('login-msg');
-    const btn   = document.getElementById('login-btn');
+        // ── GAME LOGICA ──
+        function joinGame() {
+            const name = document.getElementById('name-input').value.trim();
+            if (!name) return alert("Vul een naam in");
+            
+            socket.emit('joinGame', { 
+                name: name, 
+                userId: currentUser.id // Cruciaal voor premium check op server!
+            });
+        }
 
-    if (!email || !pw) { showMsg(msg, 'Vul alle velden in!', 'error'); return; }
+        socket.on('updateState', (state) => {
+            document.getElementById('lobby').style.display = state.status === 'LOBBY' ? 'flex' : 'none';
+            document.getElementById('game').style.display = state.status === 'LOBBY' ? 'none' : 'flex';
 
-    btn.disabled  = true;
-    btn.innerText = 'INLOGGEN…';
-    btn.classList.add('loading');
+            if (state.status === 'LOBBY') {
+                document.getElementById('player-count').innerText = `${state.playerOrder.length} spelers in lobby`;
+                return;
+            }
 
-    const { error } = await sb.auth.signInWithPassword({ email, password: pw });
+            renderGame(state);
+        });
 
-    if (error) {
-        showMsg(msg, vertaalError(error.message), 'error');
-        btn.disabled  = false;
-        btn.innerText = 'INLOGGEN';
-        btn.classList.remove('loading');
-    } else {
-        showMsg(msg, '✓ Ingelogd! Even wachten…', 'success');
-        setTimeout(() => window.location.href = '/index.html', 800);
-    }
-}
+        function renderGame(state) {
+            const myId = socket.id;
+            const me = state.players[myId];
+            
+            // Render spelers
+            const list = document.getElementById('player-list');
+            list.innerHTML = '';
+            state.playerOrder.forEach(id => {
+                const p = state.players[id];
+                const node = document.createElement('div');
+                node.className = `player-node ${state.turn === id ? 'active' : ''}`;
+                node.innerHTML = `
+                    <div style="font-size: 0.8rem;">${p.name}${p.isPremium ? '<span class="premium-badge">PREMIUM</span>' : ''}</div>
+                    <div style="font-size: 1.2rem; font-family: 'Bebas Neue';">${state.totals[id]}</div>
+                    <div style="font-size: 0.6rem; color: var(--muted);">${p.handCount} kaarten</div>
+                `;
+                list.appendChild(node);
+            });
 
-// ── REGISTER ──
-async function doRegister() {
-    const name  = document.getElementById('reg-name').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const pw    = document.getElementById('reg-pw').value;
-    const msg   = document.getElementById('reg-msg');
-    const btn   = document.getElementById('reg-btn');
+            // Render Hand
+            const handDiv = document.getElementById('hand');
+            handDiv.innerHTML = '';
+            if (me && me.hand) {
+                me.hand.forEach((card, i) => {
+                    if (!card) return;
+                    const cNode = document.createElement('div');
+                    cNode.className = `card-item ${selectedIndices.includes(i) ? 'selected' : ''}`;
+                    cNode.innerText = `${card.v}${card.s || ''}`;
+                    cNode.onclick = () => toggleCard(i);
+                    handDiv.appendChild(cNode);
+                });
+            }
 
-    if (!name || !email || !pw) { showMsg(msg, 'Vul alle velden in!', 'error'); return; }
-    if (pw.length < 6)           { showMsg(msg, 'Wachtwoord min. 6 tekens', 'error'); return; }
+            // Controls
+            const isMyTurn = state.turn === myId;
+            document.getElementById('discard-btn').style.display = (isMyTurn && state.roundState === 'DISCARD') ? 'block' : 'none';
+            document.getElementById('draw-deck-btn').style.display = (isMyTurn && state.roundState === 'DRAW') ? 'block' : 'none';
+            document.getElementById('draw-open-btn').style.display = (isMyTurn && state.roundState === 'DRAW') ? 'block' : 'none';
+            document.getElementById('call-btn').style.display = (isMyTurn && state.roundState === 'DISCARD') ? 'block' : 'none';
+        }
 
-    btn.disabled  = true;
-    btn.innerText = 'AANMAKEN…';
-    btn.classList.add('loading');
+        function toggleCard(idx) {
+            if (selectedIndices.includes(idx)) {
+                selectedIndices = selectedIndices.filter(i => i !== idx);
+            } else {
+                selectedIndices.push(idx);
+            }
+            // Hand opnieuw tekenen is hier nodig of state update afwachten
+            socket.emit('requestRefresh'); // Of lokaal renderen
+        }
 
-    const { error } = await sb.auth.signUp({
-        email, password: pw,
-        options: { data: { username: name } }
-    });
+        function discard() {
+            if (selectedIndices.length === 0) return;
+            socket.emit('discard', { indices: selectedIndices });
+            selectedIndices = [];
+        }
 
-    if (error) {
-        showMsg(msg, vertaalError(error.message), 'error');
-        btn.disabled  = false;
-        btn.innerText = 'ACCOUNT AANMAKEN';
-        btn.classList.remove('loading');
-    } else {
-        showMsg(msg, '✓ Check je email om te bevestigen!', 'success');
-        btn.innerText = 'EMAIL VERSTUURD';
-    }
-}
+        function drawFromDeck() { socket.emit('drawFromDeck'); }
+        function drawFromOpen() { socket.emit('drawFromOpen'); }
+        function callKamo() { socket.emit('call'); }
 
-// ── HELPERS ──
-function showMsg(el, text, type) {
-    el.innerText   = text;
-    el.className   = `msg ${type}`;
-}
+        socket.on('error', (msg) => {
+            document.getElementById('error-msg').innerText = msg;
+        });
 
-function vertaalError(msg) {
-    if (msg.includes('Invalid login'))      return 'Verkeerd email of wachtwoord';
-    if (msg.includes('already registered')) return 'Dit emailadres is al in gebruik';
-    if (msg.includes('Password'))           return 'Wachtwoord min. 6 tekens';
-    if (msg.includes('valid email'))        return 'Vul een geldig emailadres in';
-    return 'Er ging iets mis, probeer opnieuw';
-}
+        socket.on('actionError', (msg) => {
+            alert(msg);
+        });
 
-// Enter key support
-document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-    const loginActive = document.getElementById('form-login').style.display !== 'none';
-    if (loginActive) doLogin(); else doRegister();
-});
-</script>
+    </script>
 </body>
 </html>
