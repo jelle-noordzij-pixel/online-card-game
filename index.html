@@ -408,8 +408,9 @@ function newGame()   { socket.emit('newGame'); }
 // ══════════════════════════════════════════
 function confirmDiscard() {
     if (!selected.length) return;
-    socket.emit('discard', { indices: [...selected] });
+    const toSend = [...selected];
     selected = [];
+    socket.emit('discard', { indices: toSend });
 }
 function drawFromDeck() {
     if (!myState || myState.turn !== myId || myState.roundState !== 'DRAW') return;
@@ -544,11 +545,10 @@ function renderGame(state) {
                 if (selected.includes(i)) el.classList.add('selected');
                 wrap.appendChild(el);
                 wrap.onclick = () => {
-                    if (isMyTurn && state.roundState === 'DISCARD') {
-                        if (selected.includes(i)) selected = selected.filter(x => x !== i);
-                        else selected.push(i);
-                        renderGame(state);
-                    }
+                    if (!myState || myState.turn !== myId || myState.roundState !== 'DISCARD') return;
+                    if (selected.includes(i)) selected = selected.filter(x => x !== i);
+                    else selected.push(i);
+                    renderGame(myState);
                 };
             } else {
                 const slot = document.createElement('div');
@@ -561,13 +561,13 @@ function renderGame(state) {
  
     setStatusText(state);
  
-    // knoppen
+    // knoppen — gebruik myState zodat altijd de meest recente roundState geldt
     const myHand  = me?.hand || [];
     const myScore = calcHand(myHand);
     document.getElementById('call-btn').style.display =
-        (isMyTurn && state.roundState === 'DISCARD' && myScore <= 5) ? 'block' : 'none';
+        (isMyTurn && myState.roundState === 'DISCARD' && myScore <= 5) ? 'block' : 'none';
     document.getElementById('action-btn').style.visibility =
-        (isMyTurn && state.roundState === 'DISCARD' && selected.length > 0) ? 'visible' : 'hidden';
+        (isMyTurn && myState.roundState === 'DISCARD' && selected.length > 0) ? 'visible' : 'hidden';
 }
  
 // ══════════════════════════════════════════
