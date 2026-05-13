@@ -1,1 +1,158 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Drankspel — Inloggen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #00ffcc; --danger: #ff3366; --warn: #ffcc00;
+            --bg: #0a0d10; --surface: #131720; --surface2: #1c2130;
+            --text: #e8eaf0; --muted: #5a6480;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
 
+        body {
+            background: var(--bg); color: var(--text);
+            font-family: 'DM Mono', monospace;
+            min-height: 100dvh; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 24px;
+            background-image: 
+                radial-gradient(ellipse at 20% 0%, rgba(0,255,204,0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(255,51,102,0.05) 0%, transparent 60%);
+        }
+
+        .wrap { width: 100%; max-width: 400px; }
+        .logo { font-family: 'Bebas Neue', sans-serif; font-size: 3.2rem; color: var(--accent); text-align: center; line-height: 1; }
+        .logo-sub { text-align: center; font-size: 0.55rem; color: var(--muted); letter-spacing: 0.18em; margin-bottom: 28px; }
+
+        .tabs { display: flex; background: var(--surface2); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+        .tab { 
+            flex: 1; padding: 10px; border: none; background: transparent; 
+            color: var(--muted); font-family: 'Bebas Neue', sans-serif; 
+            font-size: 1rem; cursor: pointer; border-radius: 9px; 
+        }
+        .tab.active { background: var(--surface); color: var(--accent); }
+
+        .card { background: var(--surface); border: 1px solid #1e2535; border-radius: 20px; padding: 24px; }
+        .field-group { margin-bottom: 16px; }
+        .field-label { display: block; font-size: 0.52rem; color: var(--accent); text-transform: uppercase; margin-bottom: 6px; }
+        
+        input { 
+            width: 100%; padding: 12px; background: var(--surface2); border: 1px solid #2a3040; 
+            color: var(--text); border-radius: 10px; outline: none; font-family: 'DM Mono';
+        }
+        input:focus { border-color: var(--accent); }
+
+        .submit-btn { 
+            width: 100%; padding: 16px; border: none; border-radius: 13px; 
+            background: var(--accent); color: #0a0d10; font-family: 'Bebas Neue'; 
+            font-size: 1.2rem; cursor: pointer; margin-top: 6px; 
+        }
+
+        .msg { font-size: 0.6rem; text-align: center; margin-top: 10px; min-height: 16px; }
+        .error { color: var(--danger); }
+        .success { color: var(--accent); }
+
+        .premium-note {
+            background: rgba(255,204,0,0.08); border: 1px solid rgba(255,204,0,0.2);
+            border-radius: 10px; padding: 10px; margin-bottom: 16px;
+            font-size: 0.55rem; color: var(--warn); text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrap">
+    <div class="logo">DRANKSPEL</div>
+    <div class="logo-sub">ONLINE MULTIPLAYER · ACCOUNT VEREIST</div>
+
+    <div class="tabs">
+        <button class="tab active" id="tab-login" onclick="switchTab('login')">INLOGGEN</button>
+        <button class="tab" id="tab-register" onclick="switchTab('register')">REGISTREREN</button>
+    </div>
+
+    <div class="card">
+        <div id="form-login">
+            <div class="field-group">
+                <span class="field-label">E-mailadres</span>
+                <input type="email" id="login-email" placeholder="jouw@email.nl">
+            </div>
+            <div class="field-group">
+                <span class="field-label">Wachtwoord</span>
+                <input type="password" id="login-pw" placeholder="••••••••">
+            </div>
+            <button class="submit-btn" onclick="doLogin()">INLOGGEN</button>
+            <div class="msg" id="login-msg"></div>
+        </div>
+
+        <div id="form-register" style="display:none;">
+            <div class="premium-note">
+                ⭐ Premium (€4,99): onbeperkt spelers + extra modi
+            </div>
+            <div class="field-group">
+                <span class="field-label">Gebruikersnaam</span>
+                <input type="text" id="reg-name" placeholder="Naam in game...">
+            </div>
+            <div class="field-group">
+                <span class="field-label">E-mailadres</span>
+                <input type="email" id="reg-email" placeholder="jouw@email.nl">
+            </div>
+            <div class="field-group">
+                <span class="field-label">Wachtwoord</span>
+                <input type="password" id="reg-pw" placeholder="Min. 6 tekens">
+            </div>
+            <button class="submit-btn" onclick="doRegister()">ACCOUNT AANMAKEN</button>
+            <div class="msg" id="reg-msg"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const sb = supabase.createClient('https://caossvejzjutuwqsjdxc.supabase.co', 'sb_publishable_-I-ilTRgOdHHcHv2s7rJ7g_ecncNr46');
+
+    function switchTab(tab) {
+        document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
+        document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+        document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+        document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    }
+
+    async function doLogin() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-pw').value;
+        const msg = document.getElementById('login-msg');
+
+        const { error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) {
+            msg.innerText = "Fout: " + error.message;
+            msg.className = "msg error";
+        } else {
+            window.location.href = '/';
+        }
+    }
+
+    async function doRegister() {
+        const email = document.getElementById('reg-email').value;
+        const password = document.getElementById('reg-pw').value;
+        const username = document.getElementById('reg-name').value;
+        const msg = document.getElementById('reg-msg');
+
+        const { error } = await sb.auth.signUp({
+            email, password,
+            options: { data: { username: username } }
+        });
+
+        if (error) {
+            msg.innerText = "Fout: " + error.message;
+            msg.className = "msg error";
+        } else {
+            msg.innerText = "Check je email voor de bevestigingslink!";
+            msg.className = "msg success";
+        }
+    }
+</script>
+</body>
+</html>
