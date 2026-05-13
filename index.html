@@ -7,141 +7,510 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --accent: #00ffcc; --danger: #ff3366; --bg: #0a0d10; --surface: #131720;
+            --accent: #00ffcc; --danger: #ff3366; --warn: #ffcc00;
+            --bg: #0a0d10; --surface: #131720; --surface2: #1c2130;
+            --card-w: 15vw; --card-h: 22vw;
+            --red: #e74c3c; --blue: #3b82f6;
             --text: #e8eaf0; --muted: #5a6480;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace;
-            overflow: hidden; height: 100dvh; display: flex; flex-direction: column;
+            background: var(--bg); color: var(--text); margin: 0;
+            font-family: 'DM Mono', monospace;
+            display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(0,255,204,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 100%, rgba(255,51,102,0.04) 0%, transparent 60%);
         }
 
-        #lobby { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-        .card { background: var(--surface); padding: 30px; border-radius: 20px; width: 100%; max-width: 400px; border: 1px solid #1e2535; text-align: center; }
-        h1 { font-family: 'Bebas Neue', sans-serif; font-size: 3.5rem; color: var(--accent); margin-bottom: 10px; }
-        input { width: 100%; padding: 15px; margin: 20px 0; background: #1c2130; border: 1px solid #2a3040; color: white; border-radius: 12px; outline: none; font-family: 'DM Mono'; }
-        button { width: 100%; padding: 16px; background: var(--accent); color: #0a0d10; border: none; border-radius: 12px; font-family: 'Bebas Neue'; font-size: 1.4rem; cursor: pointer; }
-        
-        /* Logout styling */
-        .logout-link { color: var(--danger); font-size: 0.6rem; text-decoration: underline; cursor: pointer; margin-left: 10px; text-transform: uppercase; }
+        /* ── ANIMATIONS ── */
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            15%      { transform: translateX(-7px); }
+            35%      { transform: translateX(7px); }
+            55%      { transform: translateX(-5px); }
+            75%      { transform: translateX(5px); }
+        }
+        .error-shake { animation: shake 0.45s ease-in-out; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(0,255,204,0.4); }
+            50%      { box-shadow: 0 0 0 6px rgba(0,255,204,0); }
+        }
 
-        #game { display: none; flex: 1; flex-direction: column; padding: 10px; }
-        .player-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
-        .player-node { background: var(--surface); padding: 10px; border-radius: 10px; min-width: 100px; text-align: center; border: 1px solid transparent; }
-        .player-node.active { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,255,204,0.3); }
-        
-        #table-area { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
-        #hand { display: flex; justify-content: center; gap: 5px; padding: 20px; }
-        .card-item { width: 60px; height: 90px; background: white; color: black; border-radius: 8px; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
-        .card-item.selected { transform: translateY(-20px); border: 3px solid var(--accent); }
+        /* ── SCOREBAR ── */
+        .top-bar {
+            display: grid; gap: 6px;
+            padding: 8px 10px; background: var(--surface); flex-shrink: 0;
+            border-bottom: 1px solid #1e2535;
+        }
+        .score-pill {
+            background: var(--surface2); padding: 7px 4px; border-radius: 8px;
+            border-bottom: 2px solid #2a3040; text-align: center;
+            font-size: 0.6rem; transition: all 0.3s; letter-spacing: 0.03em;
+        }
+        .score-pill .name  { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; letter-spacing: 0.05em; color: var(--muted); }
+        .score-pill .pts   { font-size: 1rem; font-family: 'Bebas Neue', sans-serif; color: var(--text); }
+        .score-pill .hand-val { font-size: 0.55rem; color: var(--muted); margin-top: 1px; }
+        .active-player { border-bottom-color: var(--accent) !important; animation: pulse 1.5s infinite; }
+        .active-player .name { color: var(--accent) !important; }
+
+        /* ── GAME AREA ── */
+        #game-area { flex: 1; display: flex; flex-direction: column; justify-content: space-around; align-items: center; position: relative; padding: 5px 0; min-height: 0; }
+        #status { color: var(--accent); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; height: 14px; text-align: center; }
+
+        /* ── CARDS ── */
+        .card {
+            width: var(--card-w); height: var(--card-h);
+            background: #fff; border-radius: 7px;
+            display: flex; flex-direction: column; padding: 4px;
+            position: absolute; color: #1a1a1a;
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+            pointer-events: none; font-family: 'DM Mono', monospace;
+            transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s;
+        }
+        .card.red     { color: var(--red); }
+        .card.black   { color: #1a1a2e; }
+        .card.special { color: white; background: linear-gradient(135deg, #1d4ed8, #3b82f6); border-color: #60a5fa; }
+        .card.joker   { color: #1a1a1a; background: linear-gradient(135deg, #f59e0b, #fcd34d); border-color: #fbbf24; }
+        .card.back    {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+            border: 2px solid rgba(0,255,204,0.2);
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,255,204,0.03) 4px, rgba(0,255,204,0.03) 8px);
+        }
+        .card.selected {
+            transform: translateY(-22px) scale(1.04) !important;
+            border: 2px solid var(--accent) !important;
+            box-shadow: 0 0 20px rgba(0,255,204,0.5), 0 8px 20px rgba(0,0,0,0.6) !important;
+            z-index: 200 !important;
+        }
+        .card-corner { font-size: 2.8vw; font-weight: 700; line-height: 1.1; }
+        .card-center { flex: 1; display: flex; justify-content: center; align-items: center; font-size: 6.5vw; font-weight: bold; }
+
+        /* open stack highlights */
+        .card-target     { transform: translateX(-40px) rotate(-7deg) !important; z-index: 100 !important; border: 2px solid var(--accent) !important; box-shadow: 0 0 12px rgba(0,255,204,0.4) !important; }
+        .card-my-discard { transform: translateX(22px) rotate(4deg) !important; z-index: 110 !important; opacity: 0.55; }
+
+        /* ── STACKS ── */
+        .stacks-row  { display: flex; gap: 14vw; align-items: center; }
+        .stack-wrap  { position: relative; width: var(--card-w); height: var(--card-h); cursor: pointer; }
+        .stack-label { position: absolute; bottom: -18px; left: 0; right: 0; text-align: center; font-size: 0.5rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+        .deck-count  { position: absolute; top: -18px; right: 0; font-size: 0.5rem; color: var(--muted); }
+
+        /* ── HAND ── */
+        #player-hand { display: flex; gap: 5px; align-items: flex-end; }
+        .card-wrap   { position: relative; width: var(--card-w); height: var(--card-h); cursor: pointer; }
+        .slot-empty  { width: var(--card-w); height: var(--card-h); border: 1px dashed rgba(255,255,255,0.1); border-radius: 7px; opacity: 0.3; }
+
+        /* ── CONTROLS ── */
+        .controls {
+            padding: 10px 12px 12px; display: flex; gap: 10px;
+            background: var(--surface); flex-shrink: 0;
+            border-top: 1px solid #1e2535;
+        }
+        .btn {
+            flex: 1; padding: 16px; border-radius: 12px; border: none;
+            font-weight: bold; text-transform: uppercase; cursor: pointer;
+            font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 0.08em;
+            transition: transform 0.1s, filter 0.1s;
+        }
+        .btn:active   { transform: scale(0.96); filter: brightness(0.85); }
+        .btn:disabled { opacity: 0.35; pointer-events: none; }
+        .btn-accent { background: var(--accent); color: #0a0d10; }
+        .btn-danger { background: var(--danger); color: white; }
+
+        /* ── REVEAL ── */
+        #reveal-overlay {
+            position: fixed; inset: 0; background: rgba(8,10,15,0.97); z-index: 1000;
+            display: none; flex-direction: column; padding: 16px; overflow-y: auto;
+        }
+        .reveal-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 0.08em; text-align: center; margin-bottom: 12px; }
+        .reveal-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .player-result-card {
+            background: var(--surface2); border: 1px solid #2a3040; border-radius: 14px;
+            padding: 12px; display: flex; flex-direction: column; align-items: center;
+            animation: slideUp 0.3s ease both;
+        }
+        .winner-card { border-color: var(--accent) !important; background: rgba(0,255,204,0.07) !important; }
+        .loser-card  { border-color: var(--danger) !important; background: rgba(255,51,102,0.07) !important; }
+        .result-name  { font-family: 'Bebas Neue', sans-serif; font-size: 0.9rem; letter-spacing: 0.06em; }
+        .result-pts   { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; }
+        .result-total { font-size: 0.5rem; color: var(--muted); }
+        .result-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; margin-top: 8px; }
+        .mini-card { position: static !important; width: 9vw !important; height: 13vw !important; transform: none !important; border-radius: 4px !important; }
+        .mini-card .card-corner { font-size: 2vw !important; }
+        .mini-card .card-center { font-size: 5vw !important; }
+        .result-badge { font-size: 0.55rem; padding: 2px 8px; border-radius: 20px; margin-top: 4px; font-weight: bold; letter-spacing: 0.05em; }
+        .badge-win  { background: rgba(0,255,204,0.2); color: var(--accent); }
+        .badge-kamo { background: rgba(255,204,0,0.2); color: var(--warn); }
+        .reveal-next-info { font-size: 0.5rem; color: var(--muted); text-align: center; margin-top: 10px; letter-spacing: 0.08em; min-height: 14px; }
+
+        /* ── SETUP / LOBBY MENU ── */
+        #setup-menu {
+            position: fixed; inset: 0; background: var(--bg); z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; padding: 25px;
+            overflow-y: auto;
+            background-image: radial-gradient(ellipse at 50% 0%, rgba(0,255,204,0.06) 0%, transparent 70%);
+        }
+        .menu-inner  { max-width: 400px; margin: 0 auto; width: 100%; }
+        .menu-title  { font-family: 'Bebas Neue', sans-serif; font-size: 3rem; letter-spacing: 0.12em; text-align: center; color: var(--accent); line-height: 1; margin-bottom: 4px; }
+        .menu-sub    { text-align: center; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.15em; margin-bottom: 24px; }
+        .menu-card   { background: var(--surface); border: 1px solid #1e2535; padding: 22px; border-radius: 20px; }
+        .field-label { font-size: 0.55rem; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .field-group { margin-bottom: 14px; }
+        select, input[type=number], input[type=text] {
+            width: 100%; padding: 11px 14px; background: var(--surface2); border: 1px solid #2a3040;
+            color: var(--text); border-radius: 10px; font-family: 'DM Mono', monospace; font-size: 0.85rem;
+            appearance: none; -webkit-appearance: none;
+        }
+        .inline-fields     { display: flex; gap: 8px; }
+        .inline-fields > * { flex: 1; }
+        .start-btn {
+            width: 100%; padding: 18px; border: none; border-radius: 14px;
+            background: var(--accent); color: #0a0d10;
+            font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 0.1em;
+            cursor: pointer; margin-top: 6px; transition: transform 0.1s;
+        }
+        .start-btn:active   { transform: scale(0.97); }
+        .start-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
+        .rules-hint { font-size: 0.5rem; color: var(--muted); text-align: center; margin-top: 14px; line-height: 1.8; letter-spacing: 0.04em; }
+        #join-error { color: var(--danger); font-size: 0.6rem; text-align: center; margin-top: 6px; min-height: 14px; }
+        #lobby-players { margin-bottom: 14px; }
+        .lobby-player-item {
+            background: var(--surface2); border-radius: 8px; padding: 8px 12px;
+            font-size: 0.75rem; margin-bottom: 5px; display: flex; align-items: center; gap: 8px;
+        }
+        .host-badge { font-size: 0.5rem; background: rgba(0,255,204,0.15); color: var(--accent); padding: 2px 6px; border-radius: 10px; }
+        .settings-readonly { font-size: 0.6rem; color: var(--muted); margin-bottom: 14px; line-height: 1.9; }
+
+        /* Logout styling */
+        .logout-btn { color: var(--danger); font-size: 0.55rem; text-decoration: underline; cursor: pointer; text-transform: uppercase; margin-top: 15px; display: block; text-align: center; }
+
+        /* ── GAME OVER ── */
+        #gameover-overlay {
+            position: fixed; inset: 0; background: rgba(8,10,15,0.98); z-index: 3000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            padding: 30px; text-align: center;
+        }
+        .go-title  { font-family: 'Bebas Neue', sans-serif; font-size: 4rem; color: var(--danger); letter-spacing: 0.1em; line-height: 1; }
+        .go-sub    { font-size: 0.65rem; color: var(--muted); margin: 8px 0 24px; letter-spacing: 0.1em; }
+        .go-losers { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--warn); margin-bottom: 6px; }
+        .go-drink  { font-size: 0.8rem; color: var(--text); margin-bottom: 30px; }
+        .go-scores { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; max-width: 380px; margin-bottom: 28px; }
+        .go-score-item { background: var(--surface2); border-radius: 10px; padding: 10px 14px; min-width: 70px; }
+        .go-score-item .gn { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; color: var(--muted); }
+        .go-score-item .gp { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--text); }
+        .go-score-item.loser { border: 1px solid var(--danger); }
+        .go-btn      { padding: 16px 40px; border: none; border-radius: 12px; background: var(--accent); color: #0a0d10; font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; letter-spacing: 0.1em; cursor: pointer; }
+        .go-host-note { font-size: 0.55rem; color: var(--muted); margin-top: 10px; letter-spacing: 0.08em; }
     </style>
 </head>
 <body>
 
-    <div id="lobby">
-        <div class="card">
-            <h1>DRANKSPEL</h1>
-            <div style="margin-bottom: 15px; display: flex; justify-content: center; align-items: center;">
-                <span id="user-welcome" style="font-size: 0.7rem; color: var(--muted);"></span>
-                <span class="logout-link" onclick="doLogout()">Uitloggen</span>
+<div id="setup-menu">
+    <div class="menu-inner">
+        <div class="menu-title">DRANKSPEL</div>
+        <div id="welcome-text" style="text-align: center; font-size: 0.6rem; color: var(--accent); margin-bottom: 5px;"></div>
+        <div class="menu-sub">ONLINE MULTIPLAYER · BIER VEREIST</div>
+        <div class="menu-card">
+            <div id="join-section">
+                <div class="field-group">
+                    <span class="field-label">Jouw naam in game</span>
+                    <input id="name-input" type="text" placeholder="Naam…" maxlength="14">
+                </div>
+                <button class="start-btn" id="join-btn" onclick="joinGame()">LOBBY JOINEN</button>
+                <div id="join-error"></div>
+                <span class="logout-btn" onclick="doLogout()">Uitloggen</span>
             </div>
-            <input type="text" id="name-input" placeholder="Je naam...">
-            <button onclick="joinGame()">SPELEN</button>
-            <div id="error-msg" style="color:red; font-size: 12px; margin-top:10px;"></div>
+
+            <div id="lobby-section" style="display:none;">
+                <div class="field-group">
+                    <span class="field-label">Spelers in lobby</span>
+                    <div id="lobby-players"></div>
+                </div>
+                <div id="host-settings" style="display:none;">
+                    <div class="field-group">
+                        <span class="field-label">Puntenlimiet</span>
+                        <select id="limit-val" onchange="sendRules()">
+                            <option value="50">50 Punten</option>
+                            <option value="100" selected>100 Punten</option>
+                            <option value="150">150 Punten</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="settings-display" class="settings-readonly" style="display:none;"></div>
+                <button class="start-btn" id="start-btn" disabled onclick="startGame()">WACHT OP SPELERS…</button>
+            </div>
+        </div>
+        <div class="rules-hint">
+            BOER = −1 · AAS = 1 · CIJFERS = WAARDE · VROUW/HEER = 10 · JOKER = 0<br>
+            CALL BIJ 5 PUNTEN OF MINDER · FOUTE CALL = +20 STRAF
         </div>
     </div>
+</div>
 
-    <div id="game">
-        <div class="player-list" id="player-list"></div>
-        <div id="table-area">
-            <div id="table-stack"></div>
-            <div id="game-controls">
-                <button id="draw-deck-btn" onclick="drawFromDeck()" style="display:none; width:auto; margin:5px;">DECK</button>
-                <button id="draw-open-btn" onclick="drawFromOpen()" style="display:none; width:auto; margin:5px;">OPEN</button>
-                <button id="call-btn" onclick="callKamo()" style="display:none; width:auto; margin:5px; background:red;">CALL</button>
-            </div>
+<div id="reveal-overlay">
+    <div class="reveal-title" id="reveal-title">RONDE OVER</div>
+    <div class="reveal-grid"  id="reveal-grid"></div>
+    <div class="reveal-next-info" id="reveal-next-info"></div>
+    <button class="btn btn-accent" id="next-round-btn"
+        style="margin-top:16px; width:100%; font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:0.08em; display:none;"
+        onclick="nextRound()">VOLGENDE RONDE →</button>
+</div>
+
+<div id="gameover-overlay">
+    <div class="go-title">GAME OVER</div>
+    <div class="go-sub">DE LIMIET IS BEREIKT</div>
+    <div class="go-losers" id="go-losers"></div>
+    <div class="go-drink"  id="go-drink"></div>
+    <div class="go-scores" id="go-scores"></div>
+    <button class="go-btn" id="go-btn" style="display:none;" onclick="newGame()">NIEUW SPEL</button>
+    <div class="go-host-note" id="go-host-note"></div>
+</div>
+
+<div class="top-bar" id="top-bar"></div>
+
+<div id="game-area">
+    <div id="status"></div>
+    <div class="stacks-row">
+        <div class="stack-wrap" onclick="drawFromDeck()">
+            <div class="deck-count" id="deck-count"></div>
+            <div class="card back" style="position:absolute;"></div>
+            <span class="stack-label">DECK</span>
         </div>
-        <div id="hand"></div>
-        <button id="discard-btn" onclick="discard()" style="display:none;">GOOIEN</button>
+        <div class="stack-wrap" id="open-stack" onclick="drawFromOpen()">
+            <span class="stack-label">OPEN</span>
+        </div>
     </div>
+    <div><div id="player-hand"></div></div>
+</div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const socket = io();
-        const sb = supabase.createClient('https://caossvejzjutuwqsjdxc.supabase.co', 'sb_publishable_-I-ilTRgOdHHcHv2s7rJ7g_ecncNr46');
-        let currentUser = null;
-        let selectedIndices = [];
+<div class="controls">
+    <button id="call-btn"   class="btn btn-danger" style="display:none;"      onclick="doCall()">CALL!</button>
+    <button id="action-btn" class="btn btn-accent"  style="visibility:hidden;" onclick="confirmDiscard()">GOOI WEG</button>
+</div>
 
-        async function checkAuth() {
-            const { data: { session } } = await sb.auth.getSession();
-            if (!session) { 
-                window.location.href = 'auth.html'; 
-            } else { 
-                currentUser = session.user;
-                const username = currentUser.user_metadata.username || "Speler";
-                document.getElementById('user-welcome').innerText = "HOI " + username.toUpperCase();
-                document.getElementById('name-input').value = username;
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── SUPABASE CONFIG ──
+const sb = supabase.createClient('https://caossvejzjutuwqsjdxc.supabase.co', 'sb_publishable_-I-ilTRgOdHHcHv2s7rJ7g_ecncNr46');
+let currentUser = null;
+
+// ── AUTH CHECK ──
+async function checkAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+        window.location.href = 'auth.html';
+    } else {
+        currentUser = session.user;
+        const name = currentUser.user_metadata.username || "Speler";
+        document.getElementById('welcome-text').innerText = "INGELOGD ALS: " + name.toUpperCase();
+        document.getElementById('name-input').value = name;
+    }
+}
+checkAuth();
+
+async function doLogout() {
+    await sb.auth.signOut();
+    window.location.href = 'auth.html';
+}
+
+// ── GAME STATE ──
+const socket = io();
+let myId    = null;
+let myState = null;
+let selected = [];
+
+// ── HELPERS ──
+function calcHand(hand) {
+    return (hand || []).filter(x => x).reduce((acc, c) => {
+        if (c.v === 0)  return acc;
+        if (c.v === 1)  return acc + 1;
+        if (c.v === 11) return acc - 1;
+        if (c.v >= 12)  return acc + 10;
+        return acc + c.v;
+    }, 0);
+}
+
+function cardClass(c) {
+    if (!c) return 'back';
+    if (c.v === 0)  return 'joker';
+    if (c.v === 11) return 'special';
+    if (c.s === '♥' || c.s === '♦') return 'red';
+    return 'black';
+}
+
+function cardLabel(v) {
+    if (v === 0)  return 'J';
+    if (v === 1)  return 'A';
+    if (v === 11) return 'B';
+    if (v === 12) return 'V';
+    if (v === 13) return 'H';
+    return v;
+}
+
+function createCardEl(c, isMini = false, offsetIdx = 0) {
+    const div = document.createElement('div');
+    div.className = `card ${cardClass(c)}${isMini ? ' mini-card' : ''}`;
+    if (!isMini && offsetIdx > 0) {
+        div.style.transform = `translate(${offsetIdx*1.5}px,${offsetIdx*1.5}px)`;
+    }
+    const lbl  = cardLabel(c.v);
+    const suit = c.s || 'JK';
+    div.innerHTML = `<div class="card-corner">${lbl}<br>${c.s || ''}</div><div class="card-center">${suit}</div>`;
+    return div;
+}
+
+function setStatusText(state) {
+    const s = document.getElementById('status');
+    const isMyTurn = state.turn === myId;
+    if (isMyTurn) {
+        s.innerText = state.roundState === 'DRAW' ? '← PAK EEN KAART' : 'JOUW BEURT';
+    } else {
+        const tp = state.players[state.turn];
+        s.innerText = tp ? `${tp.name.toUpperCase()} DENKT NA…` : '';
+    }
+}
+
+// ── ACTIES ──
+function joinGame() {
+    const name = document.getElementById('name-input').value.trim();
+    if (!name) return alert('Vul een naam in');
+    socket.emit('joinGame', { name, userId: currentUser.id });
+}
+
+function startGame() { socket.emit('startGame'); }
+function nextRound() { socket.emit('nextRound'); }
+function newGame()   { socket.emit('newGame'); }
+
+function confirmDiscard() {
+    socket.emit('discard', { indices: selected });
+    selected = [];
+}
+function drawFromDeck() { socket.emit('drawFromDeck'); }
+function drawFromOpen() { socket.emit('drawFromOpen'); }
+function doCall() { socket.emit('call'); }
+
+// ── SOCKET HANDLERS ──
+socket.on('connect', () => { myId = socket.id; });
+
+socket.on('updateState', (state) => {
+    myState = state;
+    if (state.status === 'LOBBY')    renderLobby(state);
+    else if (state.status === 'PLAYING')  renderGame(state);
+    else if (state.status === 'REVEAL')   renderReveal(state);
+    else if (state.status === 'GAMEOVER') renderGameOver(state);
+});
+
+socket.on('actionError', (msg) => alert(msg));
+
+// ── RENDERING ──
+function renderLobby(state) {
+    document.getElementById('setup-menu').style.display = 'flex';
+    document.getElementById('reveal-overlay').style.display = 'none';
+    document.getElementById('gameover-overlay').style.display = 'none';
+
+    if (state.playerOrder.includes(myId)) {
+        document.getElementById('join-section').style.display = 'none';
+        document.getElementById('lobby-section').style.display = 'block';
+    }
+
+    const lpDiv = document.getElementById('lobby-players');
+    lpDiv.innerHTML = '';
+    state.playerOrder.forEach(id => {
+        lpDiv.innerHTML += `<div class="lobby-player-item">${state.players[id].name} ${id === state.hostId ? '<span class="host-badge">HOST</span>' : ''}</div>`;
+    });
+
+    const isHost = myId === state.hostId;
+    document.getElementById('host-settings').style.display = isHost ? 'block' : 'none';
+    const startBtn = document.getElementById('start-btn');
+    startBtn.disabled = state.playerOrder.length < 2;
+    startBtn.innerText = isHost ? "START SPEL" : "WACHT OP HOST...";
+}
+
+function renderGame(state) {
+    document.getElementById('setup-menu').style.display = 'none';
+    const me = state.players[myId];
+    
+    // Top bar
+    const tb = document.getElementById('top-bar');
+    tb.innerHTML = '';
+    state.playerOrder.forEach(id => {
+        const p = state.players[id];
+        tb.innerHTML += `<div class="score-pill ${id === state.turn ? 'active-player' : ''}">
+            <div class="name">${p.name.toUpperCase()}</div>
+            <div class="pts">${state.totals[id]}</div>
+            <div class="hand-val">🎴 ${p.handCount}</div>
+        </div>`;
+    });
+
+    // Hand
+    const handDiv = document.getElementById('player-hand');
+    handDiv.innerHTML = '';
+    if (me && me.hand) {
+        me.hand.forEach((c, i) => {
+            const wrap = document.createElement('div');
+            wrap.className = 'card-wrap';
+            if (c) {
+                const el = createCardEl(c, false, i);
+                if (selected.includes(i)) el.classList.add('selected');
+                wrap.appendChild(el);
+                wrap.onclick = () => {
+                    if (state.turn !== myId || state.roundState !== 'DISCARD') return;
+                    if (selected.includes(i)) selected = selected.filter(x => x !== i);
+                    else selected.push(i);
+                    renderGame(state);
+                };
+            } else {
+                wrap.innerHTML = '<div class="slot-empty"></div>';
             }
-        }
-        checkAuth();
-
-        // UITLOG FUNCTIE
-        async function doLogout() {
-            await sb.auth.signOut();
-            window.location.href = 'auth.html';
-        }
-
-        function joinGame() {
-            const name = document.getElementById('name-input').value;
-            socket.emit('joinGame', { name, userId: currentUser.id });
-        }
-
-        socket.on('updateState', (state) => {
-            document.getElementById('lobby').style.display = state.status === 'LOBBY' ? 'flex' : 'none';
-            document.getElementById('game').style.display = state.status === 'LOBBY' ? 'none' : 'flex';
-            renderGame(state);
+            handDiv.appendChild(wrap);
         });
+    }
 
-        function renderGame(state) {
-            const myId = socket.id;
-            const me = state.players[myId];
-            const list = document.getElementById('player-list');
-            list.innerHTML = '';
-            state.playerOrder.forEach(id => {
-                const p = state.players[id];
-                list.innerHTML += `<div class="player-node ${state.turn === id ? 'active' : ''}">${p.name}<br>${state.totals[id]}</div>`;
-            });
+    // Stack
+    const os = document.getElementById('open-stack');
+    os.innerHTML = '';
+    state.tableStack.slice(-1).forEach(c => os.appendChild(createCardEl(c)));
+    document.getElementById('deck-count').innerText = state.deckCount;
 
-            const handDiv = document.getElementById('hand');
-            handDiv.innerHTML = '';
-            if (me && me.hand) {
-                me.hand.forEach((card, i) => {
-                    if (!card) return;
-                    const cNode = document.createElement('div');
-                    cNode.className = `card-item ${selectedIndices.includes(i) ? 'selected' : ''}`;
-                    cNode.innerText = card.v + (card.s || '');
-                    cNode.onclick = () => {
-                        if (selectedIndices.includes(i)) selectedIndices = selectedIndices.filter(x => x !== i);
-                        else selectedIndices.push(i);
-                        renderGame(state);
-                    };
-                    handDiv.appendChild(cNode);
-                });
-            }
+    // Controls
+    const isMyTurn = state.turn === myId;
+    document.getElementById('call-btn').style.display = (isMyTurn && state.roundState === 'DISCARD' && calcHand(me.hand) <= 5) ? 'block' : 'none';
+    document.getElementById('action-btn').style.visibility = (isMyTurn && state.roundState === 'DISCARD' && selected.length > 0) ? 'visible' : 'hidden';
+    setStatusText(state);
+}
 
-            const isMyTurn = state.turn === myId;
-            document.getElementById('discard-btn').style.display = (isMyTurn && state.roundState === 'DISCARD') ? 'block' : 'none';
-            document.getElementById('draw-deck-btn').style.display = (isMyTurn && state.roundState === 'DRAW') ? 'block' : 'none';
-            document.getElementById('draw-open-btn').style.display = (isMyTurn && state.roundState === 'DRAW') ? 'block' : 'none';
-            document.getElementById('call-btn').style.display = (isMyTurn && state.roundState === 'DISCARD') ? 'block' : 'none';
-        }
+function renderReveal(state) {
+    document.getElementById('reveal-overlay').style.display = 'flex';
+    const grid = document.getElementById('reveal-grid');
+    grid.innerHTML = '';
+    const rv = state.revealData;
+    
+    state.playerOrder.forEach(id => {
+        const r = rv.results[id];
+        const p = state.players[id];
+        grid.innerHTML += `<div class="player-result-card ${r.badge === 'WIN' ? 'winner-card' : ''}">
+            <div class="result-name">${p.name.toUpperCase()}</div>
+            <div class="result-pts">${r.ptsThisRound} PT</div>
+            <div class="result-total">TOTAAL: ${r.total}</div>
+        </div>`;
+    });
 
-        function discard() { socket.emit('discard', { indices: selectedIndices }); selectedIndices = []; }
-        function drawFromDeck() { socket.emit('drawFromDeck'); }
-        function drawFromOpen() { socket.emit('drawFromOpen'); }
-        function callKamo() { socket.emit('call'); }
-        socket.on('error', m => document.getElementById('error-msg').innerText = m);
-    </script>
+    document.getElementById('next-round-btn').style.display = myId === state.hostId ? 'block' : 'none';
+}
+
+function renderGameOver(state) {
+    document.getElementById('gameover-overlay').style.display = 'flex';
+    document.getElementById('go-losers').innerText = state.pendingLosers.map(id => state.players[id].name).join(' & ') + " VERLIEST!";
+    document.getElementById('go-btn').style.display = myId === state.hostId ? 'block' : 'none';
+}
+
+</script>
 </body>
 </html>
