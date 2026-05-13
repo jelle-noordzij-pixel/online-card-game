@@ -1,13 +1,13 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
- 
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
- 
+
 app.use(express.static(__dirname));
- 
+
 // ── GAME STATE ──
 let gameState = {
     players: {},
@@ -26,17 +26,17 @@ let gameState = {
     pendingLosers: [],
     hostId: null,
 };
- 
+
 // ── HELPERS ──
 const suits = ['♥', '♦', '♣', '♠'];
- 
+
 function buildDeck() {
     let d = [];
     for (let v = 1; v <= 13; v++) for (let s of suits) d.push({ v, s });
     for (let i = 0; i < 3; i++) d.push({ v: 0, s: null });
     return d.sort(() => Math.random() - 0.5);
 }
- 
+
 function calcHand(hand) {
     return hand.filter(x => x).reduce((acc, c) => {
         if (c.v === 0)  return acc;       // Joker = 0
@@ -46,7 +46,7 @@ function calcHand(hand) {
         return acc + c.v;
     }, 0);
 }
- 
+
 function sendState() {
     // Each player gets a view where only THEIR hand is visible; others show count only
     const g = gameState;
@@ -75,7 +75,7 @@ function sendState() {
         io.to(id).emit('updateState', view);
     });
 }
- 
+
 function resetRound() {
     const g = gameState;
     g.deck = buildDeck();
@@ -94,7 +94,7 @@ function resetRound() {
     g.pendingLosers = [];
     sendState();
 }
- 
+
 function nextTurn() {
     const g = gameState;
     g.turnIndex = (g.turnIndex + 1) % g.playerOrder.length;
@@ -103,7 +103,7 @@ function nextTurn() {
     g.lastDiscardCount = 0;
     sendState();
 }
- 
+
 function resolveRound(callerId) {
     const g = gameState;
     const scores = {};
@@ -114,7 +114,7 @@ function resolveRound(callerId) {
     const kamoFail = g.playerOrder.some(id => id !== callerId && scores[id] <= callerScore);
     const results = {};
     g.pendingLosers = [];
- 
+
     g.playerOrder.forEach(id => {
         let ptsThisRound = scores[id];
         let badge = '';
@@ -139,16 +139,16 @@ function resolveRound(callerId) {
             hand: g.players[id].hand.filter(x => x),
         };
     });
- 
+
     g.revealData = { caller: callerId, results, kamoFail };
     g.status = g.pendingLosers.length > 0 ? 'GAMEOVER' : 'REVEAL';
     sendState();
 }
- 
+
 // ── SOCKET EVENTS ──
 io.on("connection", (socket) => {
     console.log("Connected:", socket.id);
- 
+
     socket.on("joinGame", ({ name }) => {
         const g = gameState;
         if (g.status !== 'LOBBY') {
@@ -162,7 +162,7 @@ io.on("connection", (socket) => {
         if (!g.hostId) g.hostId = socket.id;
         sendState();
     });
- 
+
     socket.on("updateRules", ({ limit, timerVal, strafN, strafT }) => {
         if (socket.id !== gameState.hostId) return;
         gameState.rules = {
@@ -172,7 +172,7 @@ io.on("connection", (socket) => {
         };
         sendState();
     });
- 
+
     socket.on("startGame", () => {
         const g = gameState;
         if (socket.id !== g.hostId) return;
@@ -182,63 +182,66 @@ io.on("connection", (socket) => {
         }
         resetRound();
     });
- 
+
     socket.on("discard", ({ indices }) => {
         const g = gameState;
         if (g.status !== 'PLAYING') return;
         if (socket.id !== g.turn) return;
         if (g.roundState !== 'DISCARD') return;
- 
+
         const hand = g.players[socket.id].hand;
         if (!indices || !indices.length) return;
- 
-        const cards = indices.map(i => hand[i]).filter(Boolean);
+
+        // Haal de kaarten op via de indices
+        const cards = indices.map(i => hand[i]).filter(c => c !== null && c !== undefined);
         if (!cards.length) return;
- 
-        // Validate: all same value
+
+        // Valideer: alle kaarten moeten dezelfde waarde hebben
         if (!cards.every(c => c.v === cards[0].v)) {
             socket.emit('actionError', 'ALLEEN DEZELFDE KAARTEN!');
             return;
         }
- 
-        tableStack; // push to tableStack
+
+        // Leg op de open stapel
         g.tableStack.push(...cards);
         g.lastDiscardCount = cards.length;
- 
-        // Remove from hand
+
+        // Verwijder uit hand: sorteer indices van hoog naar laag zodat splice
+        // de lagere indices niet verschuift. De LAAGSTE index wordt null (lege slot),
+        // hogere duplicaat-indices worden er uitgespliced.
         const sortedDesc = [...indices].sort((a, b) => b - a);
-        const firstIdx = Math.min(...indices);
+        const lowestIdx  = sortedDesc[sortedDesc.length - 1]; // laagste = laatste na desc sort
         sortedDesc.forEach(i => {
-            if (i === firstIdx) hand[i] = null;
+            if (i === lowestIdx) hand[i] = null;
             else hand.splice(i, 1);
         });
- 
+
         g.roundState = 'DRAW';
         sendState();
     });
- 
+
     socket.on("drawFromDeck", () => {
         const g = gameState;
         if (g.status !== 'PLAYING') return;
         if (socket.id !== g.turn) return;
         if (g.roundState !== 'DRAW') return;
- 
+
         if (g.deck.length === 0) g.deck = buildDeck();
         const card = g.deck.pop();
         const hand = g.players[socket.id].hand;
         const slot = hand.indexOf(null);
         if (slot !== -1) hand[slot] = card; else hand.push(card);
- 
+
         g.lastDiscardCount = 0;
         nextTurn();
     });
- 
+
     socket.on("drawFromOpen", () => {
         const g = gameState;
         if (g.status !== 'PLAYING') return;
         if (socket.id !== g.turn) return;
         if (g.roundState !== 'DRAW') return;
- 
+
         const available = g.tableStack.length - g.lastDiscardCount;
         if (available <= 0) {
             socket.emit('actionError', 'PAK VAN HET DECK!');
@@ -248,17 +251,17 @@ io.on("connection", (socket) => {
         const hand = g.players[socket.id].hand;
         const slot = hand.indexOf(null);
         if (slot !== -1) hand[slot] = card; else hand.push(card);
- 
+
         g.lastDiscardCount = 0;
         nextTurn();
     });
- 
+
     socket.on("call", () => {
         const g = gameState;
         if (g.status !== 'PLAYING') return;
         if (socket.id !== g.turn) return;
         if (g.roundState !== 'DISCARD') return;
- 
+
         const score = calcHand(g.players[socket.id].hand);
         if (score > 5) {
             socket.emit('actionError', 'JE HEBT MEER DAN 5 PUNTEN!');
@@ -266,13 +269,13 @@ io.on("connection", (socket) => {
         }
         resolveRound(socket.id);
     });
- 
+
     socket.on("nextRound", () => {
         const g = gameState;
         if (socket.id !== g.hostId) return;
         if (g.status === 'REVEAL') resetRound();
     });
- 
+
     socket.on("newGame", () => {
         if (socket.id !== gameState.hostId) return;
         // Reset everything except player list
@@ -286,7 +289,7 @@ io.on("connection", (socket) => {
         g.pendingLosers = [];
         sendState();
     });
- 
+
     socket.on("disconnect", () => {
         const g = gameState;
         g.playerOrder = g.playerOrder.filter(id => id !== socket.id);
@@ -299,6 +302,6 @@ io.on("connection", (socket) => {
         console.log("Disconnected:", socket.id);
     });
 });
- 
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`✅ Server draait op poort ${PORT}`));
