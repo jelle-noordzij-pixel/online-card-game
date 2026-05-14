@@ -9,7 +9,7 @@
         :root {
             --accent: #00ffcc; --danger: #ff3366; --warn: #ffcc00;
             --bg: #0a0d10; --surface: #131720; --surface2: #1c2130;
-            --card-w: 15vw; --card-h: 22vw;
+            --card-w: 70px; --card-h: 100px;
             --red: #e74c3c; --text: #e8eaf0; --muted: #5a6480;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -17,67 +17,48 @@
             background: var(--bg); color: var(--text); margin: 0;
             font-family: 'DM Mono', monospace;
             display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
-            background-image:
-                radial-gradient(ellipse at 20% 0%, rgba(0,255,204,0.04) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 100%, rgba(255,51,102,0.04) 0%, transparent 60%);
         }
-        @keyframes shake { 0%,100%{transform:translateX(0)} 15%{transform:translateX(-7px)} 35%{transform:translateX(7px)} 55%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
-        .error-shake { animation: shake 0.45s ease-in-out; }
-        .timer-bar-wrap { width:100%; height:3px; background:#111; flex-shrink:0; }
-        #timer-bar { height:100%; width:0; background:linear-gradient(90deg,var(--accent),#00ccaa); transition:width 0.1s linear; }
-        .top-bar { display:grid; gap:6px; padding:8px 10px; background:var(--surface); flex-shrink:0; border-bottom:1px solid #1e2535; }
-        .score-pill { background:var(--surface2); padding:7px 4px; border-radius:8px; border-bottom:2px solid #2a3040; text-align:center; transition:all 0.3s; }
-        .score-pill .name { font-family:'Bebas Neue'; font-size:0.85rem; color:var(--muted); }
-        .score-pill .pts  { font-family:'Bebas Neue'; font-size:1rem; color:var(--text); }
-        .active-player { border-bottom-color:var(--accent)!important; box-shadow: 0 0 10px rgba(0,255,204,0.2); }
-        .active-player .name { color:var(--accent)!important; }
-        #game-area { flex:1; display:flex; flex-direction:column; justify-content:space-around; align-items:center; position:relative; padding:5px 0; min-height:0; }
-        #status { color:var(--accent); font-size:0.65rem; letter-spacing:0.1em; text-transform:uppercase; height:16px; text-align:center; }
+        .timer-bar-wrap { width:100%; height:3px; background:#111; }
+        #timer-bar { height:100%; width:0; background:var(--accent); transition:width 0.1s linear; }
+        
+        .top-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap:6px; padding:10px; background:var(--surface); border-bottom:1px solid #1e2535; }
+        .score-pill { background:var(--surface2); padding:5px; border-radius:8px; text-align:center; border-bottom:2px solid transparent; }
+        .score-pill.active-player { border-bottom-color: var(--accent); }
+        .score-pill .name { font-size: 0.7rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+
+        #game-area { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; gap: 20px; }
+        
         .card {
-            width:var(--card-w); height:var(--card-h); background:#fff; border-radius:7px;
-            display:flex; flex-direction:column; padding:4px; position:absolute; color:#1a1a1a;
-            border:1px solid rgba(255,255,255,0.15); box-shadow:0 3px 10px rgba(0,0,0,0.5);
-            pointer-events:none; transition:transform 0.3s cubic-bezier(0.23,1,0.32,1);
+            width: var(--card-w); height: var(--card-h); background: white; border-radius: 8px;
+            color: black; display: flex; flex-direction: column; padding: 5px; position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); font-weight: bold;
         }
-        .card.red { color:var(--red); }
-        .card.black { color:#1a1a2e; }
-        .card.selected { transform:translateY(-22px) scale(1.04)!important; border:2px solid var(--accent)!important; z-index:200!important; }
-        .card-corner { font-size:2.8vw; font-weight:700; }
-        .card-center { flex:1; display:flex; justify-content:center; align-items:center; font-size:6.5vw; }
-        .stacks-row { display:flex; gap:14vw; align-items:center; }
-        .stack-wrap { position:relative; width:var(--card-w); height:var(--card-h); cursor:pointer; }
-        #player-hand { display:flex; gap:5px; align-items:flex-end; }
-        .card-wrap { position:relative; width:var(--card-w); height:var(--card-h); cursor:pointer; }
-        .controls { padding:10px 12px 12px; display:flex; gap:10px; background:var(--surface); flex-shrink:0; }
-        .btn { flex:1; padding:16px; border-radius:12px; border:none; font-family:'Bebas Neue'; font-size:1.1rem; cursor:pointer; }
-        .btn-accent { background:var(--accent); color:#0a0d10; }
-        .btn-danger { background:var(--danger); color:white; }
-        #setup-menu { position:fixed; inset:0; background:var(--bg); z-index:2000; display:flex; flex-direction:column; justify-content:center; padding:25px; }
-        .start-btn { width:100%; padding:17px; border:none; border-radius:14px; background:var(--accent); color:#0a0d10; font-family:'Bebas Neue'; font-size:1.3rem; margin-top:6px; cursor:pointer; }
-        input { width:100%; padding:11px; background:var(--surface2); border:1px solid #2a3040; color:white; border-radius:10px; margin-bottom:10px; }
+        .card.red { color: var(--red); }
+        .card.selected { transform: translateY(-15px); border: 3px solid var(--accent); }
+
+        #player-hand { display: flex; gap: 8px; padding: 20px; overflow-x: auto; width: 100%; justify-content: center; }
+
+        .controls { padding: 20px; display: flex; gap: 10px; background: var(--surface); }
+        .btn { flex: 1; padding: 15px; border-radius: 10px; border: none; font-family: 'Bebas Neue'; font-size: 1.2rem; cursor: pointer; }
+        .btn-accent { background: var(--accent); color: #000; }
+
+        #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .input-field { width: 100%; max-width: 300px; padding: 12px; margin: 10px 0; background: var(--surface2); border: 1px solid #333; color: white; border-radius: 8px; }
     </style>
 </head>
 <body>
 
 <div id="setup-menu">
-    <div style="max-width:400px; margin:0 auto; width:100%;">
-        <div style="font-family:'Bebas Neue'; font-size:3rem; text-align:center; color:var(--accent);">DRANKSPEL</div>
-        <div id="welcome-sub" style="text-align:center; font-size:0.6rem; color:var(--muted); margin-bottom:20px;">VERBINDEN MET SUPABASE...</div>
-
-        <div id="join-section">
-            <button class="start-btn" onclick="createRoom()">NIEUW SPEL STARTEN</button>
-            <div style="margin-top:20px;">
-                <input type="number" id="code-input" placeholder="CODE (4 CIJFERS)">
-                <button class="start-btn" onclick="joinRoom()">JOIN SPEL</button>
-            </div>
-        </div>
-
-        <div id="lobby-section" style="display:none; text-align:center;">
-            <div style="font-size:0.6rem; color:var(--muted);">CODE VOOR VRIENDEN</div>
-            <div id="display-code" style="font-family:'Bebas Neue'; font-size:3rem; color:var(--accent);">----</div>
-            <div id="lobby-players" style="margin-bottom:20px;"></div>
-            <button class="start-btn" id="start-btn" onclick="startGame()">WACHT OP HOST...</button>
-        </div>
+    <h1 style="font-family: 'Bebas Neue'; color: var(--accent); font-size: 3rem;">DRANKSPEL</h1>
+    <div id="join-section">
+        <button class="btn btn-accent" style="width: 100%; margin-bottom: 10px;" onclick="createRoom()">NIEUW SPEL</button>
+        <input type="number" id="code-input" class="input-field" placeholder="4-cijferige code">
+        <button class="btn btn-accent" style="width: 100%;" onclick="joinRoom()">JOIN SPEL</button>
+    </div>
+    <div id="lobby-section" style="display:none; text-align:center;">
+        <p>CODE: <span id="display-code" style="color:var(--accent); font-size: 2rem;">----</span></p>
+        <div id="player-list"></div>
+        <button id="start-btn" class="btn btn-accent" style="margin-top:20px;" onclick="startGame()">STARTEN</button>
     </div>
 </div>
 
@@ -85,63 +66,54 @@
 <div class="top-bar" id="top-bar"></div>
 
 <div id="game-area">
-    <div id="status"></div>
-    <div class="stacks-row">
-        <div class="stack-wrap" onclick="drawFromDeck()">
-            <div class="card back" style="background:#1e3a5f; border:2px solid var(--accent);"></div>
-        </div>
-        <div class="stack-wrap" id="open-stack" onclick="drawFromOpen()"></div>
+    <div id="status" style="color: var(--accent);">Verbinden...</div>
+    <div style="display:flex; gap: 20px;">
+        <div class="card" style="background: #2c3e50; border: 2px solid var(--accent);" onclick="drawFromDeck()"></div>
+        <div id="open-stack" onclick="drawFromOpen()"></div>
     </div>
     <div id="player-hand"></div>
 </div>
 
 <div class="controls">
-    <button id="call-btn" class="btn btn-danger" style="display:none;" onclick="doCall()">CALL!</button>
-    <button id="action-btn" class="btn btn-accent" style="visibility:hidden;" onclick="confirmDiscard()">GOOI WEG</button>
+    <button id="action-btn" class="btn btn-accent" style="display:none;" onclick="confirmDiscard()">GOOI WEG</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // --- SUPABASE CONFIGURATIE ---
-    const sb = supabase.createClient(
-        'https://caossvejzjutuwqsjdxc.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhb3NzdmVqemp1dHV3cXNqZHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzM5MjEsImV4cCI6MjA5NDI0OTkyMX0.wjv6tRfeQX-0FORoBbSQgr-TbHWdLLThG4RPV4DCNk4'
-    );
+    // --- CONFIG ---
+    const SB_URL = 'https://caossvejzjutuwqsjdxc.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhb3NzdmVqemp1dHV3cXNqZHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzM5MjEsImV4cCI6MjA5NDI0OTkyMX0.wjv6tRfeQX-0FORoBbSQgr-TbHWdLLThG4RPV4DCNk4';
+    
+    const sb = supabase.createClient(SB_URL, SB_KEY);
     const socket = io();
 
-    let myId, currentUser, selected = [], lastState = null;
+    let selected = [];
 
-    (async () => {
-        const { data: { session } } = await sb.auth.getSession();
-        if (!session) { window.location.href = 'auth.html'; return; }
-        currentUser = session.user;
-        document.getElementById('welcome-sub').innerText = 'INGELOGD ALS: ' + (currentUser.user_metadata?.username || 'SPELER');
-    })();
-
-    function createRoom() { socket.emit('createRoom', { userId: currentUser.id }); }
+    // --- FUNCTIES ---
+    function createRoom() { socket.emit('createRoom', { userId: 'guest-' + Math.random().toString(36).substr(2, 4) }); }
+    
     function joinRoom() {
         const code = document.getElementById('code-input').value;
-        socket.emit('joinRoom', { code, userId: currentUser.id });
+        if(code) socket.emit('joinRoom', { code, userId: 'guest-' + Math.random().toString(36).substr(2, 4) });
     }
+
     function startGame() { socket.emit('startGame'); }
     function drawFromDeck() { socket.emit('drawFromDeck'); }
     function drawFromOpen() { socket.emit('drawFromOpen'); }
-    function doCall() { socket.emit('call'); }
     function confirmDiscard() {
         socket.emit('discard', { indices: selected });
         selected = [];
     }
 
+    // --- SOCKET EVENTS ---
     socket.on('updateState', (state) => {
-        lastState = state;
         if (state.status === 'LOBBY') {
             document.getElementById('setup-menu').style.display = 'flex';
             document.getElementById('join-section').style.display = 'none';
             document.getElementById('lobby-section').style.display = 'block';
             document.getElementById('display-code').innerText = state.myRoomCode;
-            document.getElementById('start-btn').disabled = (socket.id !== state.hostId);
-            document.getElementById('start-btn').innerText = (socket.id === state.hostId) ? 'SPEL STARTEN' : 'WACHT OP HOST...';
+            document.getElementById('start-btn').style.display = (socket.id === state.hostId) ? 'block' : 'none';
         } else {
             document.getElementById('setup-menu').style.display = 'none';
             renderGame(state);
@@ -149,39 +121,34 @@
     });
 
     function renderGame(state) {
+        document.getElementById('status').innerText = (state.turn === socket.id) ? "JOUW BEURT" : "WACHTEN OP ANDEREN...";
+        
+        // Render spelers bovenaan
         const tb = document.getElementById('top-bar');
         tb.innerHTML = '';
         state.playerOrder.forEach(id => {
             const p = state.players[id];
-            const div = document.createElement('div');
-            div.className = `score-pill ${id === state.turn ? 'active-player' : ''}`;
-            div.innerHTML = `<div class="name">${p.name}</div><div class="pts">${state.totals[id] || 0}</div>`;
-            tb.appendChild(div);
+            tb.innerHTML += `<div class="score-pill ${id === state.turn ? 'active-player' : ''}"><div class="name">${p.name || 'Speler'}</div></div>`;
         });
 
+        // Render hand
         const handDiv = document.getElementById('player-hand');
         handDiv.innerHTML = '';
         const myHand = state.players[socket.id]?.hand || [];
         myHand.forEach((c, i) => {
-            if (!c) return;
-            const wrap = document.createElement('div');
-            wrap.className = 'card-wrap';
-            const el = document.createElement('div');
-            el.className = `card ${c.s === '♥' || c.s === '♦' ? 'red' : 'black'} ${selected.includes(i) ? 'selected' : ''}`;
-            el.innerHTML = `<div class="card-corner">${c.v}${c.s}</div><div class="card-center">${c.s}</div>`;
-            wrap.appendChild(el);
-            wrap.onclick = () => {
-                if (state.turn === socket.id) {
-                    selected = selected.includes(i) ? selected.filter(x => x !== i) : [...selected, i];
+            const cardEl = document.createElement('div');
+            cardEl.className = `card ${c.s === '♥' || c.s === '♦' ? 'red' : ''} ${selected.includes(i) ? 'selected' : ''}`;
+            cardEl.innerHTML = `<div>${c.v}</div><div style="font-size:2rem; align-self:center; margin-top:10px;">${c.s}</div>`;
+            cardEl.onclick = () => {
+                if(state.turn === socket.id) {
+                    selected = selected.includes(i) ? [] : [i];
                     renderGame(state);
                 }
             };
-            handDiv.appendChild(wrap);
+            handDiv.appendChild(cardEl);
         });
 
-        document.getElementById('action-btn').style.visibility = (state.turn === socket.id && selected.length > 0) ? 'visible' : 'hidden';
-        document.getElementById('call-btn').style.display = (state.turn === socket.id && state.roundState === 'DISCARD') ? 'block' : 'none';
-        document.getElementById('status').innerText = (state.turn === socket.id) ? 'JOUW BEURT' : 'WACHTEN OP ANDEREN...';
+        document.getElementById('action-btn').style.display = (state.turn === socket.id && selected.length > 0) ? 'block' : 'none';
     }
 </script>
 </body>
