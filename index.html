@@ -248,7 +248,7 @@
 </div>
 
 <div class="controls">
-    <button id="call-btn"   class="btn btn-danger" style="display:none;"      onclick="doCall()">CALL!</button>
+    <button id="call-btn"   class="btn btn-danger" style="display:none;"       onclick="doCall()">CALL!</button>
     <button id="action-btn" class="btn btn-accent" style="visibility:hidden;" onclick="confirmDiscard()">GOOI WEG</button>
 </div>
 
@@ -256,15 +256,16 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+    // --- SUPABASE CONFIGURATIE ---
     const sb = supabase.createClient(
         'https://caossvejzjutuwqsjdxc.supabase.co',
-        'sb_publishable_-I-ilTRgOdHHcHv2s7rJ7g_ecncNr46'
+        'sb_publishable_-I-ilTRgOdHHcHv2s7rJ7g_ecncNr46' // Public Key
     );
     const socket = io();
 
     let myId, currentUser, selected = [], lastState = null;
 
-    // ── AUTH ──────────────────────────────────────────────────────────────────
+    // ── AUTH ──
     (async () => {
         const { data: { session } } = await sb.auth.getSession();
         if (!session) { window.location.href = 'auth.html'; return; }
@@ -275,7 +276,7 @@
 
     async function doLogout() { await sb.auth.signOut(); window.location.href = 'auth.html'; }
 
-    // ── CARD HELPERS ──────────────────────────────────────────────────────────
+    // ── CARD HELPERS ──
     function cardLabel(v) {
         if (v === 0)  return 'J';
         if (v === 1)  return 'A';
@@ -307,7 +308,7 @@
         return div;
     }
 
-    // ── SOCKET ACTIONS ────────────────────────────────────────────────────────
+    // ── SOCKET ACTIONS ──
     socket.on('connect', () => { myId = socket.id; });
 
     function createRoom() { socket.emit('createRoom', { userId: currentUser.id }); }
@@ -342,7 +343,7 @@
         setTimeout(() => { el.style.display = 'none'; }, 3000);
     }
 
-    // ── ERROR FROM SERVER ─────────────────────────────────────────────────────
+    // ── ERROR FROM SERVER ──
     socket.on('gameError', (msg) => {
         const s = document.getElementById('status');
         const ph = document.getElementById('player-hand');
@@ -356,13 +357,12 @@
             if (lastState) updateStatus(lastState);
         }, 1000);
 
-        // Also show in join section if visible
         if (document.getElementById('join-section').style.display !== 'none') {
             showJoinError(msg);
         }
     });
 
-    // ── MAIN STATE HANDLER ────────────────────────────────────────────────────
+    // ── MAIN STATE HANDLER ──
     socket.on('updateState', (state) => {
         lastState = state;
         if (state.status === 'LOBBY')    { renderLobby(state); return; }
@@ -371,7 +371,7 @@
         if (state.status === 'GAMEOVER') { renderGameOver(state); return; }
     });
 
-    // ── LOBBY RENDER ──────────────────────────────────────────────────────────
+    // ── LOBBY RENDER ──
     function renderLobby(state) {
         document.getElementById('setup-menu').style.display    = 'flex';
         document.getElementById('join-section').style.display  = 'none';
@@ -403,7 +403,7 @@
         document.getElementById('gameover-overlay').style.display = 'none';
     }
 
-    // ── GAME RENDER ───────────────────────────────────────────────────────────
+    // ── GAME RENDER ──
     function renderGame(state) {
         document.getElementById('setup-menu').style.display    = 'none';
         document.getElementById('reveal-overlay').style.display = 'none';
@@ -422,7 +422,6 @@
 
         document.getElementById('deck-count').innerText = `${state.deckCount} kaarten`;
 
-        // Open stack
         const os = document.getElementById('open-stack');
         os.innerHTML = '<span class="stack-label">OPEN</span>';
         const visible = state.tableStack.slice(-6);
@@ -436,7 +435,6 @@
             os.appendChild(el);
         });
 
-        // Player hand
         const handDiv = document.getElementById('player-hand');
         handDiv.innerHTML = '';
         const myHand = state.players[myId]?.hand || [];
@@ -491,7 +489,7 @@
         }, 0);
     }
 
-    // ── REVEAL RENDER ─────────────────────────────────────────────────────────
+    // ── REVEAL RENDER ──
     function renderReveal(state) {
         document.getElementById('setup-menu').style.display = 'none';
         document.getElementById('reveal-overlay').style.display = 'flex';
@@ -534,7 +532,7 @@
         document.getElementById('waiting-next').style.display   = isHost ? 'none'   : 'block';
     }
 
-    // ── GAME OVER RENDER ──────────────────────────────────────────────────────
+    // ── GAME OVER RENDER ──
     function renderGameOver(state) {
         document.getElementById('reveal-overlay').style.display   = 'none';
         document.getElementById('gameover-overlay').style.display = 'flex';
