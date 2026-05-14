@@ -2,24 +2,18 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Drankspel Online</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --accent: #00ffcc; --danger: #ff3366; --warn: #ffcc00;
+            --accent: #00ffcc; --danger: #ff3366;
             --bg: #0a0d10; --surface: #131720; --surface2: #1c2130;
             --card-w: 70px; --card-h: 100px;
             --red: #e74c3c; --text: #e8eaf0; --muted: #5a6480;
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            background: var(--bg); color: var(--text); margin: 0;
-            font-family: 'DM Mono', monospace;
-            display: flex; flex-direction: column; height: 100dvh; overflow: hidden;
-        }
-        .timer-bar-wrap { width:100%; height:3px; background:#111; }
-        #timer-bar { height:100%; width:0; background:var(--accent); transition:width 0.1s linear; }
+        body { background: var(--bg); color: var(--text); margin: 0; font-family: 'DM Mono', monospace; display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
         
         .top-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap:6px; padding:10px; background:var(--surface); border-bottom:1px solid #1e2535; }
         .score-pill { background:var(--surface2); padding:5px; border-radius:8px; text-align:center; border-bottom:2px solid transparent; }
@@ -31,73 +25,92 @@
         .card {
             width: var(--card-w); height: var(--card-h); background: white; border-radius: 8px;
             color: black; display: flex; flex-direction: column; padding: 5px; position: relative;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3); font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3); font-weight: bold; cursor: pointer;
         }
         .card.red { color: var(--red); }
         .card.selected { transform: translateY(-15px); border: 3px solid var(--accent); }
+        .card.back { background: #2c3e50; border: 2px solid var(--accent); }
 
         #player-hand { display: flex; gap: 8px; padding: 20px; overflow-x: auto; width: 100%; justify-content: center; }
-
         .controls { padding: 20px; display: flex; gap: 10px; background: var(--surface); }
         .btn { flex: 1; padding: 15px; border-radius: 10px; border: none; font-family: 'Bebas Neue'; font-size: 1.2rem; cursor: pointer; }
         .btn-accent { background: var(--accent); color: #000; }
+        .btn-danger { background: var(--danger); color: #fff; }
 
-        #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .input-field { width: 100%; max-width: 300px; padding: 12px; margin: 10px 0; background: var(--surface2); border: 1px solid #333; color: white; border-radius: 8px; }
+        #setup-menu { position: fixed; inset: 0; background: var(--bg); z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; text-align: center;}
+        .input-field { width: 100%; max-width: 300px; padding: 12px; margin: 10px 0; background: var(--surface2); border: 1px solid #333; color: white; border-radius: 8px; font-family: 'DM Mono';}
     </style>
 </head>
 <body>
 
 <div id="setup-menu">
-    <h1 style="font-family: 'Bebas Neue'; color: var(--accent); font-size: 3rem;">DRANKSPEL</h1>
+    <h1 style="font-family: 'Bebas Neue'; color: var(--accent); font-size: 3rem; margin-bottom: 5px;">DRANKSPEL</h1>
+    <div id="user-info" style="font-size: 0.7rem; color: var(--muted); margin-bottom: 20px;">Laden...</div>
+    
     <div id="join-section">
-        <button class="btn btn-accent" style="width: 100%; margin-bottom: 10px;" onclick="createRoom()">NIEUW SPEL</button>
-        <input type="number" id="code-input" class="input-field" placeholder="4-cijferige code">
-        <button class="btn btn-accent" style="width: 100%;" onclick="joinRoom()">JOIN SPEL</button>
+        <button class="btn btn-accent" style="width: 100%; max-width: 300px; margin-bottom: 10px;" onclick="createRoom()">NIEUW SPEL</button>
+        <input type="number" id="code-input" class="input-field" placeholder="VUL 4-CIJFERIGE CODE IN">
+        <button class="btn btn-accent" style="width: 100%; max-width: 300px;" onclick="joinRoom()">JOIN SPEL</button>
+        <button class="btn btn-danger" style="width: 100%; max-width: 300px; margin-top: 20px;" onclick="logout()">UITLOGGEN</button>
     </div>
+    
     <div id="lobby-section" style="display:none; text-align:center;">
-        <p>CODE: <span id="display-code" style="color:var(--accent); font-size: 2rem;">----</span></p>
-        <div id="player-list"></div>
-        <button id="start-btn" class="btn btn-accent" style="margin-top:20px;" onclick="startGame()">STARTEN</button>
+        <p style="color: var(--muted);">DEEL DEZE CODE MET VRIENDEN:</p>
+        <div id="display-code" style="color:var(--accent); font-size: 3.5rem; font-family: 'Bebas Neue'; letter-spacing: 5px;">----</div>
+        <div id="player-list" style="margin-top: 20px; font-size: 0.9rem;"></div>
+        <button id="start-btn" class="btn btn-accent" style="margin-top:30px; width: 100%;" onclick="startGame()">START SPEL</button>
     </div>
 </div>
 
-<div class="timer-bar-wrap"><div id="timer-bar"></div></div>
 <div class="top-bar" id="top-bar"></div>
 
 <div id="game-area">
-    <div id="status" style="color: var(--accent);">Verbinden...</div>
-    <div style="display:flex; gap: 20px;">
-        <div class="card" style="background: #2c3e50; border: 2px solid var(--accent);" onclick="drawFromDeck()"></div>
-        <div id="open-stack" onclick="drawFromOpen()"></div>
+    <div id="status" style="color: var(--accent); font-family: 'Bebas Neue'; font-size: 1.5rem; letter-spacing: 2px;">EVEN GEDULD...</div>
+    <div style="display:flex; gap: 20px; align-items: center; height: 120px;">
+        <div class="card back" onclick="drawFromDeck()"></div>
+        <div id="open-stack" style="width: var(--card-w); height: var(--card-h); border: 1px dashed var(--muted); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.7rem;" onclick="drawFromOpen()">LEEG</div>
     </div>
     <div id="player-hand"></div>
 </div>
 
 <div class="controls">
-    <button id="action-btn" class="btn btn-accent" style="display:none;" onclick="confirmDiscard()">GOOI WEG</button>
+    <button id="action-btn" class="btn btn-accent" style="display:none;" onclick="confirmDiscard()">KAART WEGGOOIEN</button>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-    // --- CONFIG ---
-    const SB_URL = 'https://caossvejzjutuwqsjdxc.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhb3NzdmVqemp1dHV3cXNqZHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzM5MjEsImV4cCI6MjA5NDI0OTkyMX0.wjv6tRfeQX-0FORoBbSQgr-TbHWdLLThG4RPV4DCNk4';
-    
-    const sb = supabase.createClient(SB_URL, SB_KEY);
+    const sb = supabase.createClient(
+        'https://caossvejzjutuwqsjdxc.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhb3NzdmVqemp1dHV3cXNqZHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzM5MjEsImV4cCI6MjA5NDI0OTkyMX0.wjv6tRfeQX-0FORoBbSQgr-TbHWdLLThG4RPV4DCNk4'
+    );
     const socket = io();
-
+    let currentUser = null;
     let selected = [];
 
-    // --- FUNCTIES ---
-    function createRoom() { socket.emit('createRoom', { userId: 'guest-' + Math.random().toString(36).substr(2, 4) }); }
-    
-    function joinRoom() {
-        const code = document.getElementById('code-input').value;
-        if(code) socket.emit('joinRoom', { code, userId: 'guest-' + Math.random().toString(36).substr(2, 4) });
+    // --- AUTHENTICATIE CHECK ---
+    async function checkAuth() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+            window.location.href = 'auth.html'; // Stuur naar inlogscherm als er geen sessie is
+            return;
+        }
+        currentUser = session.user;
+        document.getElementById('user-info').innerText = 'INGELOGD ALS: ' + currentUser.email;
+    }
+    checkAuth();
+
+    async function logout() {
+        await sb.auth.signOut();
+        window.location.href = 'auth.html';
     }
 
+    // --- GAME ACTIES ---
+    function createRoom() { socket.emit('createRoom', { userId: currentUser.id }); }
+    function joinRoom() {
+        const code = document.getElementById('code-input').value;
+        if(code) socket.emit('joinRoom', { code, userId: currentUser.id });
+    }
     function startGame() { socket.emit('startGame'); }
     function drawFromDeck() { socket.emit('drawFromDeck'); }
     function drawFromOpen() { socket.emit('drawFromOpen'); }
@@ -106,13 +119,17 @@
         selected = [];
     }
 
-    // --- SOCKET EVENTS ---
+    // --- ONTVANG DATA VAN SERVER ---
     socket.on('updateState', (state) => {
         if (state.status === 'LOBBY') {
             document.getElementById('setup-menu').style.display = 'flex';
             document.getElementById('join-section').style.display = 'none';
             document.getElementById('lobby-section').style.display = 'block';
             document.getElementById('display-code').innerText = state.myRoomCode;
+            
+            const pList = Object.values(state.players).map(p => p.name).join('<br>');
+            document.getElementById('player-list').innerHTML = "Spelers in lobby:<br><br>" + pList;
+            
             document.getElementById('start-btn').style.display = (socket.id === state.hostId) ? 'block' : 'none';
         } else {
             document.getElementById('setup-menu').style.display = 'none';
@@ -121,15 +138,23 @@
     });
 
     function renderGame(state) {
-        document.getElementById('status').innerText = (state.turn === socket.id) ? "JOUW BEURT" : "WACHTEN OP ANDEREN...";
+        document.getElementById('status').innerText = (state.turn === socket.id) ? "JOUW BEURT!" : "WACHTEN OP ANDEREN...";
         
-        // Render spelers bovenaan
+        // Render spelers (top bar)
         const tb = document.getElementById('top-bar');
         tb.innerHTML = '';
         state.playerOrder.forEach(id => {
             const p = state.players[id];
-            tb.innerHTML += `<div class="score-pill ${id === state.turn ? 'active-player' : ''}"><div class="name">${p.name || 'Speler'}</div></div>`;
+            tb.innerHTML += `<div class="score-pill ${id === state.turn ? 'active-player' : ''}"><div class="name">${p.name}</div></div>`;
         });
+
+        // Render open kaart
+        const openStack = document.getElementById('open-stack');
+        if (state.openCard) {
+            openStack.className = `card ${state.openCard.s === '♥' || state.openCard.s === '♦' ? 'red' : ''}`;
+            openStack.innerHTML = `<div>${state.openCard.v}</div><div style="font-size:2rem; align-self:center; margin-top:10px;">${state.openCard.s}</div>`;
+            openStack.style.border = "none";
+        }
 
         // Render hand
         const handDiv = document.getElementById('player-hand');
@@ -140,15 +165,16 @@
             cardEl.className = `card ${c.s === '♥' || c.s === '♦' ? 'red' : ''} ${selected.includes(i) ? 'selected' : ''}`;
             cardEl.innerHTML = `<div>${c.v}</div><div style="font-size:2rem; align-self:center; margin-top:10px;">${c.s}</div>`;
             cardEl.onclick = () => {
-                if(state.turn === socket.id) {
+                if(state.turn === socket.id && state.roundState === 'DISCARD') {
                     selected = selected.includes(i) ? [] : [i];
-                    renderGame(state);
+                    renderGame(state); // Update selectie visueel
                 }
             };
             handDiv.appendChild(cardEl);
         });
 
-        document.getElementById('action-btn').style.display = (state.turn === socket.id && selected.length > 0) ? 'block' : 'none';
+        // Laat discard knop zien als het jouw beurt is, je in de discard-fase zit EN een kaart hebt geselecteerd
+        document.getElementById('action-btn').style.display = (state.turn === socket.id && state.roundState === 'DISCARD' && selected.length > 0) ? 'block' : 'none';
     }
 </script>
 </body>
