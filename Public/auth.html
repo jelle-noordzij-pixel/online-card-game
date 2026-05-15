@@ -1,1 +1,179 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Inloggen – Drankspel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --accent: #00ffcc;
+            --danger: #ff3366;
+            --bg: #0a0d10;
+            --surface: #131720;
+            --surface2: #1c2130;
+            --text: #e8eaf0;
+            --muted: #5a6480;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100dvh;
+            padding: 20px;
+        }
+        .container {
+            background: var(--surface);
+            border: 1px solid #1e2535;
+            border-radius: 16px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+        h1 {
+            font-family: 'Bebas Neue';
+            color: var(--accent);
+            font-size: 3.5rem;
+            letter-spacing: 4px;
+            margin-bottom: 4px;
+        }
+        .sub {
+            color: var(--muted);
+            font-size: 0.7rem;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+        }
+        input {
+            display: block;
+            width: 100%;
+            padding: 13px 16px;
+            margin-bottom: 12px;
+            background: var(--surface2);
+            border: 1px solid #2a3040;
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        input:focus { border-color: var(--accent); }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            border-radius: 10px;
+            border: none;
+            font-family: 'Bebas Neue';
+            font-size: 1.3rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent); color: #000; }
+        .btn-secondary { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
+        #msg {
+            min-height: 24px;
+            font-size: 0.78rem;
+            margin-bottom: 16px;
+            color: var(--danger);
+            letter-spacing: 0.5px;
+        }
+        #msg.ok { color: var(--accent); }
+        .divider {
+            border: none;
+            border-top: 1px solid #1e2535;
+            margin: 20px 0;
+        }
+        .guest-hint {
+            font-size: 0.7rem;
+            color: var(--muted);
+            margin-top: 16px;
+        }
+        .btn-guest {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid #2a3040;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>DRANKSPEL</h1>
+    <p class="sub">ONLINE MULTIPLAYER</p>
 
+    <div id="msg"></div>
+
+    <input type="email" id="email" placeholder="E-mailadres" autocomplete="email">
+    <input type="password" id="password" placeholder="Wachtwoord" autocomplete="current-password">
+
+    <button class="btn btn-primary" onclick="login()">INLOGGEN</button>
+    <button class="btn btn-secondary" onclick="register()">ACCOUNT AANMAKEN</button>
+
+    <hr class="divider">
+
+    <button class="btn btn-guest" onclick="guestLogin()">VERDER ALS GAST</button>
+    <p class="guest-hint">Als gast worden je scores niet opgeslagen.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    const SB_URL = 'https://caossvejzjutuwqsjdxc.supabase.co';
+    const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhb3NzdmVqemp1dHV3cXNqZHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzM5MjEsImV4cCI6MjA5NDI0OTkyMX0.wjv6tRfeQX-0FORoBbSQgr-TbHWdLLThG4RPV4DCNk4';
+    const sb = supabase.createClient(SB_URL, SB_ANON);
+
+    const msgEl = document.getElementById('msg');
+
+    function showMsg(text, isOk = false) {
+        msgEl.textContent = text;
+        msgEl.className = isOk ? 'ok' : '';
+    }
+
+    // Al ingelogd? Direct door.
+    sb.auth.getSession().then(({ data: { session } }) => {
+        if (session) {
+            sessionStorage.setItem('userName', session.user.email.split('@')[0]);
+            window.location.href = 'index.html';
+        }
+    });
+
+    async function login() {
+        const email = document.getElementById('email').value.trim();
+        const pass = document.getElementById('password').value;
+        if (!email || !pass) { showMsg('Vul e-mail en wachtwoord in.'); return; }
+        showMsg('Bezig...');
+        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (error) { showMsg(error.message); return; }
+        const name = email.split('@')[0];
+        sessionStorage.setItem('userName', name);
+        window.location.href = 'index.html';
+    }
+
+    async function register() {
+        const email = document.getElementById('email').value.trim();
+        const pass = document.getElementById('password').value;
+        if (!email || !pass) { showMsg('Vul e-mail en wachtwoord in.'); return; }
+        if (pass.length < 6) { showMsg('Wachtwoord minimaal 6 tekens.'); return; }
+        showMsg('Bezig...');
+        const { error } = await sb.auth.signUp({ email, password: pass });
+        if (error) { showMsg(error.message); return; }
+        showMsg('Account aangemaakt! Controleer je e-mail om te bevestigen.', true);
+    }
+
+    function guestLogin() {
+        const name = 'Gast_' + Math.floor(1000 + Math.random() * 9000);
+        sessionStorage.setItem('userName', name);
+        sessionStorage.setItem('isGuest', '1');
+        window.location.href = 'index.html';
+    }
+</script>
+</body>
+</html>
