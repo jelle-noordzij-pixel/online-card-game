@@ -157,6 +157,26 @@ function endRound(code, callerId) {
     const losers = room.playerOrder.filter(id => room.players[id].score >= LIMIT);
     const goMilestone = milestones.find(m => m.pts === 'go');
 
+    // Speler met meeste handpunten deze ronde (de caller met 0 telt niet mee als winner)
+    let highStrafHit = null;
+    const highStraf = room.rules?.highStraf;
+    if (highStraf && highStraf.n > 0) {
+        let highScore = -1, highId = null;
+        room.playerOrder.forEach(id => {
+            const sc = scores[id];
+            if (sc > highScore) { highScore = sc; highId = id; }
+        });
+        if (highId) {
+            highStrafHit = {
+                id: highId,
+                name: room.players[highId].name,
+                score: highScore,
+                n: highStraf.n,
+                t: highStraf.t
+            };
+        }
+    }
+
     const revealPayload = {
         callerId,
         callerName: room.players[callerId].name,
@@ -172,6 +192,7 @@ function endRound(code, callerId) {
         losers: losers.map(id => ({ id, name: room.players[id].name, score: room.players[id].score })),
         milestoneHits,
         goMilestone,
+        highStrafHit,
         rules: room.rules,
     };
 
