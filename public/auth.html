@@ -25,10 +25,19 @@
             font-size: 3.5rem; letter-spacing: 0.12em;
             text-align: center; line-height: 1; margin-bottom: 4px;
         }
-        .sub { text-align: center; font-size: 0.55rem; color: var(--muted); letter-spacing: 0.18em; margin-bottom: 28px; }
+        .sub { text-align: center; font-size: 0.55rem; color: var(--muted); letter-spacing: 0.18em; margin-bottom: 24px; }
+
+        /* ── SCHERMEN ── */
+        .screen { display: none; }
+        .screen.active { display: block; }
+
         .card {
             background: var(--surface); border: 1px solid #1e2535;
             border-radius: 20px; padding: 24px;
+        }
+        .card-title {
+            font-family: 'Bebas Neue'; font-size: 1.4rem; letter-spacing: 0.1em;
+            color: var(--text); margin-bottom: 18px; text-align: center;
         }
         .field-label { font-size: 0.55rem; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 5px; display: block; }
         .field-group { margin-bottom: 14px; }
@@ -41,50 +50,87 @@
         }
         input:focus { border-color: var(--accent); }
         .btn {
-            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            width: 100%; padding: 15px; border: none; border-radius: 12px;
             font-family: 'Bebas Neue'; font-size: 1.2rem; letter-spacing: 0.1em;
             cursor: pointer; margin-bottom: 10px;
             transition: transform 0.1s, filter 0.1s;
         }
+        .btn:last-child { margin-bottom: 0; }
         .btn:active { transform: scale(0.97); filter: brightness(0.85); }
-        .btn:disabled { opacity: 0.5; pointer-events: none; }
+        .btn:disabled { opacity: 0.45; pointer-events: none; }
         .btn-primary   { background: var(--accent); color: #0a0d10; }
         .btn-secondary { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
         .btn-muted     { background: transparent; color: var(--muted); border: 1px solid #2a3040; font-size: 1rem; }
-        #msg {
-            min-height: 20px; font-size: 0.72rem; margin-bottom: 14px;
-            text-align: center; line-height: 1.5; padding: 0 4px;
-            color: var(--danger);
+        .btn-back      { background: transparent; color: var(--muted); border: none; font-size: 0.85rem; padding: 10px; letter-spacing: 0.05em; }
+
+        #msg-login, #msg-register {
+            min-height: 18px; font-size: 0.72rem; margin-bottom: 12px;
+            text-align: center; line-height: 1.5; color: var(--danger);
         }
-        #msg.ok   { color: var(--accent); }
-        #msg.info { color: var(--muted); }
+        .ok   { color: var(--accent) !important; }
+        .info { color: var(--muted) !important; }
+
         hr { border: none; border-top: 1px solid #1e2535; margin: 16px 0; }
-        .hint { font-size: 0.6rem; color: var(--muted); text-align: center; margin-top: -6px; margin-bottom: 10px; line-height: 1.5; }
+        .hint { font-size: 0.58rem; color: var(--muted); text-align: center; margin-top: -6px; margin-bottom: 12px; line-height: 1.5; }
     </style>
 </head>
 <body>
 <div class="wrap">
     <h1>DRANKSPEL</h1>
     <p class="sub">KAARTSPEL · BIER VEREIST</p>
-    <div class="card">
-        <div id="msg" class="info">Inloggen of account aanmaken om te spelen.</div>
-        <div class="field-group">
-            <span class="field-label">E-mailadres</span>
-            <input type="email" id="email" placeholder="naam@email.com" autocomplete="email">
+
+    <!-- ── SCHERM 1: INLOGGEN ── -->
+    <div class="screen active" id="screen-login">
+        <div class="card">
+            <div class="card-title">INLOGGEN</div>
+            <div id="msg-login" class="info">Welkom terug!</div>
+            <div class="field-group">
+                <span class="field-label">E-mailadres</span>
+                <input type="email" id="login-email" placeholder="naam@email.com" autocomplete="email"
+                       onkeydown="if(event.key==='Enter') login()">
+            </div>
+            <div class="field-group">
+                <span class="field-label">Wachtwoord</span>
+                <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+                       onkeydown="if(event.key==='Enter') login()">
+            </div>
+            <button class="btn btn-primary" id="login-btn" onclick="login()">INLOGGEN</button>
+            <hr>
+            <button class="btn btn-secondary" onclick="goTo('screen-register')">NIEUW ACCOUNT AANMAKEN</button>
+            <button class="btn btn-muted" onclick="guest()">VERDER ALS GAST</button>
+            <p class="hint">Als gast kun je je naam aanpassen in het spel.</p>
         </div>
-        <div class="field-group">
-            <span class="field-label">Wachtwoord</span>
-            <input type="password" id="password" placeholder="••••••••" autocomplete="current-password"
-                   onkeydown="if(event.key==='Enter') login()">
+    </div>
+
+    <!-- ── SCHERM 2: REGISTREREN ── -->
+    <div class="screen" id="screen-register">
+        <div class="card">
+            <div class="card-title">ACCOUNT AANMAKEN</div>
+            <div id="msg-register" class="info">Kies een gebruikersnaam die ingame wordt gebruikt.</div>
+            <div class="field-group">
+                <span class="field-label">Gebruikersnaam (ingame naam)</span>
+                <input type="text" id="reg-username" placeholder="Bijv. Bierkoningin" maxlength="16"
+                       autocomplete="nickname">
+            </div>
+            <div class="field-group">
+                <span class="field-label">E-mailadres</span>
+                <input type="email" id="reg-email" placeholder="naam@email.com" autocomplete="email">
+            </div>
+            <div class="field-group">
+                <span class="field-label">Wachtwoord</span>
+                <input type="password" id="reg-password" placeholder="Minimaal 6 tekens" autocomplete="new-password">
+            </div>
+            <div class="field-group">
+                <span class="field-label">Wachtwoord herhalen</span>
+                <input type="password" id="reg-password2" placeholder="Herhaal wachtwoord" autocomplete="new-password"
+                       onkeydown="if(event.key==='Enter') register()">
+            </div>
+            <button class="btn btn-primary" id="register-btn" onclick="register()">ACCOUNT AANMAKEN</button>
+            <button class="btn btn-back" onclick="goTo('screen-login')">← Terug naar inloggen</button>
         </div>
-        <button class="btn btn-primary" id="login-btn" onclick="login()">INLOGGEN</button>
-        <button class="btn btn-secondary" id="register-btn" onclick="register()">NIEUW ACCOUNT</button>
-        <p class="hint">Minimaal 6 tekens voor je wachtwoord.</p>
-        <hr>
-        <button class="btn btn-muted" onclick="guest()">VERDER ALS GAST</button>
-        <p class="hint">Als gast worden je scores niet opgeslagen.</p>
     </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
     const sb = supabase.createClient(
@@ -92,84 +138,103 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhb3NzdmVqemp1dHV3cXNqZHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzM5MjEsImV4cCI6MjA5NDI0OTkyMX0.wjv6tRfeQX-0FORoBbSQgr-TbHWdLLThG4RPV4DCNk4'
     );
 
-    const msgEl = document.getElementById('msg');
-
-    function show(text, type) {
-        msgEl.textContent = text;
-        msgEl.className   = type || '';
-    }
-
-    function setLoading(on) {
-        document.getElementById('login-btn').disabled    = on;
-        document.getElementById('register-btn').disabled = on;
-    }
-
     // Al ingelogd? Direct door.
-    sb.auth.getSession().then(({ data: { session } }) => {
+    sb.auth.getSession().then(async ({ data: { session } }) => {
         if (session) {
-            sessionStorage.setItem('userName', session.user.email.split('@')[0]);
+            await loadUserName(session.user);
             location.href = 'index.html';
         }
     });
 
+    function goTo(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function showMsg(id, text, type) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        el.className   = type || '';
+    }
+
+    // Haal gebruikersnaam op uit Supabase user_metadata
+    async function loadUserName(user) {
+        const name = user.user_metadata?.username || user.email.split('@')[0];
+        sessionStorage.setItem('userName', name);
+    }
+
     async function login() {
-        const email = document.getElementById('email').value.trim();
-        const pass  = document.getElementById('password').value;
-        if (!email || !pass) { show('Vul je e-mail en wachtwoord in.'); return; }
+        const email = document.getElementById('login-email').value.trim();
+        const pass  = document.getElementById('login-password').value;
+        if (!email || !pass) { showMsg('msg-login', 'Vul je e-mail en wachtwoord in.'); return; }
 
-        setLoading(true);
-        show('Bezig met inloggen…', 'info');
+        document.getElementById('login-btn').disabled = true;
+        showMsg('msg-login', 'Bezig…', 'info');
 
-        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-        setLoading(false);
+        const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+
+        document.getElementById('login-btn').disabled = false;
 
         if (error) {
-            // Vertaal veelvoorkomende Supabase foutmeldingen naar Nederlands
-            if (error.message.includes('Invalid login credentials')) {
-                show('Verkeerd e-mailadres of wachtwoord.');
+            if (error.message.includes('Invalid login')) {
+                showMsg('msg-login', 'Verkeerd e-mailadres of wachtwoord.');
             } else if (error.message.includes('Email not confirmed')) {
-                show('Bevestig eerst je e-mail via de link die je hebt ontvangen.');
+                showMsg('msg-login', 'Bevestig eerst je e-mail via de link die je hebt ontvangen.');
             } else {
-                show(error.message);
+                showMsg('msg-login', error.message);
             }
             return;
         }
 
-        const { data: { session } } = await sb.auth.getSession();
-        sessionStorage.setItem('userName', session.user.email.split('@')[0]);
+        await loadUserName(data.user);
         location.href = 'index.html';
     }
 
     async function register() {
-        const email = document.getElementById('email').value.trim();
-        const pass  = document.getElementById('password').value;
-        if (!email)       { show('Vul een e-mailadres in.'); return; }
-        if (!pass)        { show('Vul een wachtwoord in.'); return; }
-        if (pass.length < 6) { show('Wachtwoord moet minimaal 6 tekens zijn.'); return; }
+        const username = document.getElementById('reg-username').value.trim();
+        const email    = document.getElementById('reg-email').value.trim();
+        const pass     = document.getElementById('reg-password').value;
+        const pass2    = document.getElementById('reg-password2').value;
 
-        setLoading(true);
-        show('Bezig met registreren…', 'info');
+        if (!username)       { showMsg('msg-register', 'Kies een gebruikersnaam.'); return; }
+        if (username.length < 2) { showMsg('msg-register', 'Gebruikersnaam moet minimaal 2 tekens zijn.'); return; }
+        if (!email)          { showMsg('msg-register', 'Vul een e-mailadres in.'); return; }
+        if (!pass)           { showMsg('msg-register', 'Vul een wachtwoord in.'); return; }
+        if (pass.length < 6) { showMsg('msg-register', 'Wachtwoord moet minimaal 6 tekens zijn.'); return; }
+        if (pass !== pass2)  { showMsg('msg-register', 'Wachtwoorden komen niet overeen.'); return; }
 
-        const { data, error } = await sb.auth.signUp({ email, password: pass });
-        setLoading(false);
+        document.getElementById('register-btn').disabled = true;
+        showMsg('msg-register', 'Bezig…', 'info');
+
+        const { data, error } = await sb.auth.signUp({
+            email,
+            password: pass,
+            options: {
+                data: { username }   // opgeslagen in user_metadata
+            }
+        });
+
+        document.getElementById('register-btn').disabled = false;
 
         if (error) {
             if (error.message.includes('already registered') || error.message.includes('already been registered')) {
-                show('Dit e-mailadres is al in gebruik. Probeer in te loggen.');
+                showMsg('msg-register', 'Dit e-mailadres is al in gebruik.');
             } else {
-                show(error.message);
+                showMsg('msg-register', error.message);
             }
             return;
         }
 
-        // Controleer of e-mailbevestiging vereist is
-        if (data.user && !data.session) {
-            // Bevestiging vereist
-            show('Account aangemaakt! Check je e-mail voor een bevestigingslink.', 'ok');
-        } else if (data.session) {
-            // Geen bevestiging nodig — direct inloggen
-            sessionStorage.setItem('userName', email.split('@')[0]);
+        if (data.session) {
+            // E-mailbevestiging uitgeschakeld → direct inloggen
+            sessionStorage.setItem('userName', username);
             location.href = 'index.html';
+        } else {
+            // E-mailbevestiging vereist
+            showMsg('msg-register',
+                'Account aangemaakt! Check je e-mail voor een bevestigingslink. Daarna kun je inloggen.',
+                'ok'
+            );
         }
     }
 
