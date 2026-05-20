@@ -137,9 +137,25 @@ function endRound(code, callerId) {
         results[id] = { pts, badge, handScore: scores[id], hand: room.players[id].hand };
     });
 
-    // Check game over
+    // Check mijlpalen en game over
     const LIMIT = room.rules?.limit || 100;
+    const milestones = room.rules?.milestones || [];
+
+    // Bepaal welke spelers een mijlpaal bereikten deze ronde
+    const milestoneHits = [];
+    room.playerOrder.forEach(id => {
+        const p = room.players[id];
+        milestones.forEach(m => {
+            if (m.pts === 'go') return; // game over apart afgehandeld
+            const scoreBefore = p.score - results[id].pts;
+            if (scoreBefore < m.pts && p.score >= m.pts) {
+                milestoneHits.push({ name: p.name, pts: m.pts, n: m.n, t: m.t });
+            }
+        });
+    });
+
     const losers = room.playerOrder.filter(id => room.players[id].score >= LIMIT);
+    const goMilestone = milestones.find(m => m.pts === 'go');
 
     const revealPayload = {
         callerId,
@@ -154,6 +170,8 @@ function endRound(code, callerId) {
             result: results[id],
         })),
         losers: losers.map(id => ({ id, name: room.players[id].name, score: room.players[id].score })),
+        milestoneHits,
+        goMilestone,
         rules: room.rules,
     };
 
