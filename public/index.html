@@ -529,6 +529,20 @@ function updateStrafRows() {
     if (limit > 100) milestones.push({ pts: 100, label: '100 PT', cls: 'milestone-100' });
     milestones.push({ pts: 'go', label: 'GAME OVER (' + limit + ' PT)', cls: 'milestone-go' });
 
+    // Eerste rij: straf voor hoogste handpunten van de ronde
+    const highRow = document.createElement('div');
+    highRow.className = 'straf-row';
+    highRow.style.borderLeftColor = 'var(--danger)';
+    highRow.style.marginBottom = '4px';
+    highRow.innerHTML =
+        '<span class="straf-label" style="font-size:0.55rem;">MEESTE PUNTEN RONDE</span>' +
+        '<input type="number" id="straf-n-high" value="1" min="0" max="30">' +
+        '<select id="straf-t-high">' +
+        '<option value="slokken">Slokken</option>' +
+        '<option value="adtjes">Adtjes</option>' +
+        '</select>';
+    container.appendChild(highRow);
+
     milestones.forEach(m => {
         const row = document.createElement('div');
         row.className = 'straf-row ' + m.cls;
@@ -541,20 +555,6 @@ function updateStrafRows() {
             '</select>';
         container.appendChild(row);
     });
-
-    // Aparte rij: straf voor hoogste handpunten van de ronde
-    const highRow = document.createElement('div');
-    highRow.className = 'straf-row';
-    highRow.style.borderLeftColor = 'var(--danger)';
-    highRow.style.marginTop = '4px';
-    highRow.innerHTML =
-        '<span class="straf-label" style="font-size:0.55rem;">MEESTE PUNTEN RONDE</span>' +
-        '<input type="number" id="straf-n-high" value="1" min="0" max="30">' +
-        '<select id="straf-t-high">' +
-        '<option value="slokken">Slokken</option>' +
-        '<option value="adtjes">Adtjes</option>' +
-        '</select>';
-    container.appendChild(highRow);
 }
 
 // Init straf rijen bij laden
