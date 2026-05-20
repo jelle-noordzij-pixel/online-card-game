@@ -205,7 +205,7 @@
         .straf-row.milestone-100 { border-left-color: var(--warn); }
         .straf-row.milestone-150 { border-left-color: var(--danger); }
         .straf-row.milestone-go  { border-left-color: var(--accent); }
-        .straf-row .straf-label  { font-size: 0.6rem; color: var(--muted); min-width: 54px; letter-spacing: 0.05em; }
+        .straf-row .straf-label  { font-size: 0.6rem; color: var(--muted); width: 120px; flex-shrink: 0; letter-spacing: 0.05em; }
         .straf-row input[type=number] {
             width: 52px; padding: 7px 8px; font-size: 0.8rem;
             text-align: center; flex-shrink: 0;
@@ -541,6 +541,20 @@ function updateStrafRows() {
             '</select>';
         container.appendChild(row);
     });
+
+    // Aparte rij: straf voor hoogste handpunten van de ronde
+    const highRow = document.createElement('div');
+    highRow.className = 'straf-row';
+    highRow.style.borderLeftColor = 'var(--danger)';
+    highRow.style.marginTop = '4px';
+    highRow.innerHTML =
+        '<span class="straf-label" style="font-size:0.55rem;">MEESTE PUNTEN RONDE</span>' +
+        '<input type="number" id="straf-n-high" value="2" min="0" max="30">' +
+        '<select id="straf-t-high">' +
+        '<option value="slokken">Slokken</option>' +
+        '<option value="adtjes">Adtjes</option>' +
+        '</select>';
+    container.appendChild(highRow);
 }
 
 // Init straf rijen bij laden
@@ -564,7 +578,11 @@ function getRules() {
         }
     });
 
-    return { limit, timer, milestones };
+    const highN = parseInt(document.getElementById('straf-n-high')?.value || 2);
+    const highT = document.getElementById('straf-t-high')?.value || 'slokken';
+    const highStraf = { n: highN, t: highT };
+
+    return { limit, timer, milestones, highStraf };
 }
 function showToast(msg) {
     const t = document.getElementById('toast');
@@ -842,6 +860,20 @@ function showReveal(data) {
             ).join('<br>');
         document.getElementById('reveal-overlay').insertBefore(banner, document.getElementById('reveal-grid'));
     }
+
+    // Banner: hoogste handpunten van de ronde
+    const existingHighBanner = document.getElementById('high-banner');
+    if (existingHighBanner) existingHighBanner.remove();
+    if (data.highStrafHit) {
+        const h = data.highStrafHit;
+        const hBanner = document.createElement('div');
+        hBanner.id = 'high-banner';
+        hBanner.style.cssText = 'background:rgba(255,51,102,0.1);border:1px solid var(--danger);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:0.72rem;line-height:1.8;text-align:center;';
+        hBanner.innerHTML = '🔥 <strong style="color:var(--danger);font-family:Bebas Neue;letter-spacing:0.05em;">MEESTE PUNTEN!</strong><br>' +
+            '<span style="color:var(--text)">' + h.name.toUpperCase() + ' had ' + h.score + ' PT in hand → ' + h.n + ' ' + h.t.toUpperCase() + '</span>';
+        document.getElementById('reveal-overlay').insertBefore(hBanner, document.getElementById('reveal-grid'));
+    }
+
     title.style.color = data.kamoFail ? 'var(--danger)' : 'var(--accent)';
     grid.innerHTML = '';
 
