@@ -193,6 +193,24 @@
             white-space: nowrap;
         }
         #toast.show { opacity: 1; }
+
+        /* ── STRAF RIJEN ── */
+        .straf-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 10px; background: var(--surface2);
+            border-radius: 10px; margin-bottom: 7px;
+            border-left: 3px solid #2a3040;
+        }
+        .straf-row.milestone-50  { border-left-color: #3b82f6; }
+        .straf-row.milestone-100 { border-left-color: var(--warn); }
+        .straf-row.milestone-150 { border-left-color: var(--danger); }
+        .straf-row.milestone-go  { border-left-color: var(--accent); }
+        .straf-row .straf-label  { font-size: 0.6rem; color: var(--muted); min-width: 54px; letter-spacing: 0.05em; }
+        .straf-row input[type=number] {
+            width: 52px; padding: 7px 8px; font-size: 0.8rem;
+            text-align: center; flex-shrink: 0;
+        }
+        .straf-row select { flex: 1; padding: 7px 8px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -210,18 +228,25 @@
                 </div>
                 <div class="field-group">
                     <span class="field-label">Puntenlimiet</span>
-                    <select id="limit-val">
+                    <select id="limit-val" onchange="updateStrafRows()">
                         <option value="50">50 Punten</option>
                         <option value="100" selected>100 Punten</option>
                         <option value="150">150 Punten</option>
                     </select>
                 </div>
                 <div class="field-group">
-                    <span class="field-label">Straf bij Game Over</span>
-                    <div class="inline-fields">
-                        <input type="number" id="num-straf" value="5" min="1" max="20">
-                        <select id="type-straf"><option>Slokken</option></select>
-                    </div>
+                    <span class="field-label">Timer per beurt</span>
+                    <select id="timer-val">
+                        <option value="0">Uit</option>
+                        <option value="5">5 seconden</option>
+                        <option value="10" selected>10 seconden</option>
+                        <option value="15">15 seconden</option>
+                        <option value="20">20 seconden</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <span class="field-label">Straffen per mijlpaal</span>
+                    <div id="straf-rows"></div>
                 </div>
                 <button class="start-btn" onclick="createRoom()">NIEUW SPEL AANMAKEN</button>
             </div>
@@ -338,18 +363,103 @@ async function logout() {
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const socket = io();
-let lastState = null;
-let selected  = [];
-let isHost    = false;
-let lastRoundData = null; // bewaar voor gameOver na reveal
+let lastState     = null;
+let selected      = [];
+let isHost        = false;
+let lastRoundData = null;
+let timerInterval = null;
+let timerMax      = 0;
+let timerLeft     = 0;
+
+function startTurnTimer(seconds) {
+    clearInterval(timerInterval);
+    const bar = document.getElementById('timer-bar');
+    if (!seconds || seconds === 0) { bar.style.width = '0%'; return; }
+    timerMax  = seconds;
+    timerLeft = seconds;
+    bar.style.background = 'linear-gradient(90deg, var(--accent), #00ccaa)';
+    bar.style.width = '100%';
+    timerInterval = setInterval(() => {
+        timerLeft = Math.max(0, timerLeft - 0.1);
+        bar.style.width = (timerLeft / timerMax * 100) + '%';
+        if (timerLeft <= timerMax * 0.4) bar.style.background = 'linear-gradient(90deg, var(--warn), #ffaa00)';
+        if (timerLeft <= timerMax * 0.2) bar.style.background = 'linear-gradient(90deg, var(--danger), #cc0033)';
+        if (timerLeft <= 0) {
+            clearInterval(timerInterval);
+            autoAction();
+        }
+    }, 100);
+}
+
+function stopTimer() {
+    clearInterval(timerInterval);
+    document.getElementById('timer-bar').style.width = '0%';
+}
+
+function autoAction() {
+    if (!lastState || lastState.turn !== socket.id) return;
+    if (lastState.phase === 'DISCARD') {
+        // Gooi automatisch de eerste kaart weg
+        const hand = (lastState.players[socket.id] || {}).hand || [];
+        const firstIdx = hand.findIndex(c => c);
+        if (firstIdx !== -1) {
+            socket.emit('discard', { indices: [firstIdx] });
+            selected = [];
+        }
+    } else if (lastState.phase === 'DRAW') {
+        socket.emit('drawDeck');
+    }
+}
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 function getName() { return isGuest ? (document.getElementById('name-input').value.trim() || myName) : myName; }
+function updateStrafRows() {
+    const limit = parseInt(document.getElementById('limit-val').value);
+    const container = document.getElementById('straf-rows');
+    container.innerHTML = '';
+
+    const milestones = [];
+    // Alleen tussenmijlpalen tonen, niet de limiet zelf
+    if (limit > 50)  milestones.push({ pts: 50,  label: '50 PT',  cls: 'milestone-50' });
+    if (limit > 100) milestones.push({ pts: 100, label: '100 PT', cls: 'milestone-100' });
+    milestones.push({ pts: 'go', label: 'GAME OVER (' + limit + ' PT)', cls: 'milestone-go' });
+
+    milestones.forEach(m => {
+        const row = document.createElement('div');
+        row.className = 'straf-row ' + m.cls;
+        row.innerHTML =
+            '<span class="straf-label">' + m.label + '</span>' +
+            '<input type="number" id="straf-n-' + m.pts + '" value="' + (m.pts === 'go' ? 5 : 2) + '" min="1" max="30">' +
+            '<select id="straf-t-' + m.pts + '">' +
+            '<option value="slokken">Slokken</option>' +
+            '<option value="adtjes">Adtjes</option>' +
+            '</select>';
+        container.appendChild(row);
+    });
+}
+
+// Init straf rijen bij laden
+document.addEventListener('DOMContentLoaded', updateStrafRows);
+// Fallback: ook direct aanroepen
+setTimeout(updateStrafRows, 0);
+
 function getRules() {
-    return {
-        limit: parseInt(document.getElementById('limit-val').value),
-        straf: { n: parseInt(document.getElementById('num-straf').value), t: document.getElementById('type-straf').value }
-    };
+    const limit = parseInt(document.getElementById('limit-val').value);
+    const timer = parseInt(document.getElementById('timer-val').value);
+
+    const milestones = [];
+    // Alleen tussenmijlpalen (niet de limiet zelf) + game over
+    const allPts = [50, 100, 'go'];
+    allPts.forEach(p => {
+        if (p !== 'go' && p >= limit) return; // sla limiet zelf over
+        const nEl = document.getElementById('straf-n-' + p);
+        const tEl = document.getElementById('straf-t-' + p);
+        if (nEl && tEl) {
+            milestones.push({ pts: p, n: parseInt(nEl.value), t: tEl.value });
+        }
+    });
+
+    return { limit, timer, milestones };
 }
 function showToast(msg) {
     const t = document.getElementById('toast');
@@ -486,6 +596,16 @@ function renderGame(state) {
         tb.appendChild(pill);
     });
 
+    // Timer
+    if (isMyTurn && lastState && lastState.rules && lastState.rules.timer) {
+        // Alleen starten als de beurt net veranderd is (niet bij elke render)
+        if (!timerInterval || timerLeft <= 0) {
+            startTurnTimer(lastState.rules.timer);
+        }
+    } else if (!isMyTurn) {
+        stopTimer();
+    }
+
     // Status
     const statusEl = document.getElementById('status');
     if (isMyTurn) {
@@ -603,6 +723,20 @@ function showReveal(data) {
     const grid    = document.getElementById('reveal-grid');
 
     title.textContent = data.callerName.toUpperCase() + ' GEEFT EEN CALL!';
+
+    // Mijlpaal drinken banner
+    const existingBanner = document.getElementById('milestone-banner');
+    if (existingBanner) existingBanner.remove();
+    if (data.milestoneHits && data.milestoneHits.length > 0) {
+        const banner = document.createElement('div');
+        banner.id = 'milestone-banner';
+        banner.style.cssText = 'background:rgba(255,204,0,0.12);border:1px solid var(--warn);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:0.72rem;line-height:2;text-align:center;';
+        banner.innerHTML = '🍺 <strong style="color:var(--warn);font-family:Bebas Neue;letter-spacing:0.05em;">DRINKEN!</strong><br>' +
+            data.milestoneHits.map(h =>
+                '<span style="color:var(--text)">' + h.name.toUpperCase() + ' bereikt ' + h.pts + ' PT → ' + h.n + ' ' + h.t.toUpperCase() + '</span>'
+            ).join('<br>');
+        document.getElementById('reveal-overlay').insertBefore(banner, document.getElementById('reveal-grid'));
+    }
     title.style.color = data.kamoFail ? 'var(--danger)' : 'var(--accent)';
     grid.innerHTML = '';
 
@@ -663,8 +797,12 @@ function showGameOver(data) {
 
     document.getElementById('go-losers').textContent =
         losers.map(l => l.name.toUpperCase()).join(' & ') + (losers.length > 1 ? ' VERLIEZEN!' : ' VERLIEST!');
-    document.getElementById('go-drink').textContent =
-        'STRAF: ' + rules.straf.n + ' ' + rules.straf.t.toUpperCase();
+    const goM = data.goMilestone || (rules.milestones && rules.milestones.find(m => m.pts === 'go'));
+    if (goM) {
+        document.getElementById('go-drink').textContent = 'STRAF: ' + goM.n + ' ' + goM.t.toUpperCase();
+    } else if (rules.straf) {
+        document.getElementById('go-drink').textContent = 'STRAF: ' + rules.straf.n + ' ' + rules.straf.t.toUpperCase();
+    }
 
     const sc = document.getElementById('go-scores');
     sc.innerHTML = '';
