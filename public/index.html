@@ -485,17 +485,33 @@ function stopTimer() {
     document.getElementById('timer-bar').style.width = '0%';
 }
 
+function cardScore(c) {
+    if (!c) return -99;
+    if (c.v === 0)  return 0;
+    if (c.v === 1)  return 1;
+    if (c.v === 11) return -1;
+    if (c.v >= 12)  return 10;
+    return c.v;
+}
+
 function autoAction() {
     if (!lastState || lastState.turn !== socket.id) return;
     if (lastState.phase === 'DISCARD') {
-        // Gooi automatisch de eerste kaart weg
+        // Gooi de kaart met de HOOGSTE waarde weg (meeste punten kwijt)
         const hand = (lastState.players[socket.id] || {}).hand || [];
-        const firstIdx = hand.findIndex(c => c);
-        if (firstIdx !== -1) {
-            socket.emit('discard', { indices: [firstIdx] });
+        let bestIdx = -1, bestScore = -99;
+        hand.forEach((c, i) => {
+            if (c && cardScore(c) > bestScore) {
+                bestScore = cardScore(c);
+                bestIdx = i;
+            }
+        });
+        if (bestIdx !== -1) {
+            socket.emit('discard', { indices: [bestIdx] });
             selected = [];
         }
     } else if (lastState.phase === 'DRAW') {
+        // Altijd van de dichte stapel pakken
         socket.emit('drawDeck');
     }
 }
