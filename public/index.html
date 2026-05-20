@@ -149,7 +149,7 @@
             display: none; flex-direction: column; padding: 16px; overflow-y: auto;
         }
         .reveal-title { font-family: 'Bebas Neue'; font-size: 2rem; letter-spacing: 0.08em; text-align: center; margin-bottom: 12px; }
-        .reveal-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+        .reveal-grid  { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; width: 100%; }
         .player-result-card {
             background: var(--surface2); border: 1px solid #2a3040; border-radius: 14px;
             padding: 12px; display: flex; flex-direction: column; align-items: center;
