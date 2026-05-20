@@ -195,7 +195,7 @@ io.on('connection', (socket) => {
         const room = rooms[code];
         if (!room) { socket.emit('error', 'Kamer niet gevonden.'); return; }
         if (room.status !== 'LOBBY') { socket.emit('error', 'Spel is al bezig.'); return; }
-        if (room.playerOrder.length >= 4) { socket.emit('error', 'Kamer is vol (max 4 spelers).'); return; }
+        if (room.playerOrder.length >= 6) { socket.emit('error', 'Kamer is vol (max 6 spelers).'); return; }
         socket.join(code);
         socket.roomCode = code;
         room.players[socket.id] = { id: socket.id, name: userName || ('Speler ' + (room.playerOrder.length + 1)), hand: [], score: 0, extraCards: 0 };
