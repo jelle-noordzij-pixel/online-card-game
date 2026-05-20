@@ -237,9 +237,9 @@
                 <div class="field-group">
                     <span class="field-label">Timer per beurt</span>
                     <select id="timer-val">
-                        <option value="0">Uit</option>
+                        <option value="0" selected>Uit</option>
                         <option value="5">5 seconden</option>
-                        <option value="10" selected>10 seconden</option>
+                        <option value="10">10 seconden</option>
                         <option value="15">15 seconden</option>
                         <option value="20">20 seconden</option>
                     </select>
@@ -534,10 +534,10 @@ function updateStrafRows() {
         row.className = 'straf-row ' + m.cls;
         row.innerHTML =
             '<span class="straf-label">' + m.label + '</span>' +
-            '<input type="number" id="straf-n-' + m.pts + '" value="' + (m.pts === 'go' ? 5 : 2) + '" min="1" max="30">' +
+            '<input type="number" id="straf-n-' + m.pts + '" value="' + (m.pts === 'go' ? 5 : m.pts === 50 ? 5 : m.pts === 100 ? 1 : 2) + '" min="1" max="30">' +
             '<select id="straf-t-' + m.pts + '">' +
-            '<option value="slokken">Slokken</option>' +
-            '<option value="adtjes">Adtjes</option>' +
+            '<option value="slokken"' + (m.pts === 100 ? '' : ' selected') + '>Slokken</option>' +
+            '<option value="adtjes"' + (m.pts === 100 ? ' selected' : '') + '>Adtjes</option>' +
             '</select>';
         container.appendChild(row);
     });
@@ -549,7 +549,7 @@ function updateStrafRows() {
     highRow.style.marginTop = '4px';
     highRow.innerHTML =
         '<span class="straf-label" style="font-size:0.55rem;">MEESTE PUNTEN RONDE</span>' +
-        '<input type="number" id="straf-n-high" value="2" min="0" max="30">' +
+        '<input type="number" id="straf-n-high" value="1" min="0" max="30">' +
         '<select id="straf-t-high">' +
         '<option value="slokken">Slokken</option>' +
         '<option value="adtjes">Adtjes</option>' +
