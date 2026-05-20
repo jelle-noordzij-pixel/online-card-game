@@ -257,7 +257,10 @@
                 </div>
                 <button class="start-btn secondary" onclick="joinRoom()">MEESPELEN MET CODE</button>
             </div>
-            <button class="start-btn muted" onclick="logout()" style="margin-top:10px;">UITLOGGEN</button>
+            <div style="display:flex; gap:8px; margin-top:10px;">
+                <button class="start-btn muted" id="profile-btn" onclick="goToProfile()" style="flex:1; margin-top:0;">MIJN PROFIEL</button>
+                <button class="start-btn muted" onclick="logout()" style="flex:1; margin-top:0; color:var(--danger); border-color:rgba(255,51,102,0.3);">UITLOGGEN</button>
+            </div>
             <div class="rules-hint">
                 BOER = −1 · AAS = 1 · CIJFERS = WAARDE · VROUW/HEER = 10 · JOKER = 0<br>
                 CALL BIJ 5 PUNTEN OF MINDER · FOUTE CALL = +20 STRAF + EXTRA KAART
@@ -292,6 +295,39 @@
     <div class="go-drink" id="go-drink"></div>
     <div class="go-scores" id="go-scores"></div>
     <button class="go-btn" onclick="location.reload()">NIEUW SPEL</button>
+</div>
+
+<!-- ── PROFIEL OVERLAY ── -->
+<div id="profile-overlay" style="
+    position:fixed; inset:0; background:var(--bg); z-index:2500;
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px;
+    background-image: radial-gradient(ellipse at 50% 0%, rgba(0,255,204,0.06) 0%, transparent 70%);
+">
+    <div style="width:100%; max-width:360px;">
+        <div style="font-family:'Bebas Neue'; font-size:2.5rem; color:var(--accent); letter-spacing:0.12em; text-align:center; margin-bottom:4px;">MIJN PROFIEL</div>
+        <div style="font-size:0.55rem; color:var(--muted); text-align:center; letter-spacing:0.18em; margin-bottom:24px;">ACCOUNTINSTELLINGEN</div>
+        <div style="background:var(--surface); border:1px solid #1e2535; border-radius:20px; padding:24px;">
+            <div id="profile-msg" style="min-height:18px; font-size:0.72rem; text-align:center; margin-bottom:14px; color:var(--danger);"></div>
+
+            <div style="margin-bottom:14px;">
+                <span style="font-size:0.55rem; color:var(--accent); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:5px; display:block;">Gebruikersnaam</span>
+                <input type="text" id="profile-username" placeholder="Nieuwe gebruikersnaam" maxlength="16"
+                       style="width:100%; padding:11px 14px; background:var(--surface2); border:1px solid #2a3040; color:var(--text); border-radius:10px; font-family:'DM Mono',monospace; font-size:0.85rem; outline:none;">
+            </div>
+
+            <div style="border-top:1px solid #1e2535; padding-top:16px; margin-bottom:14px;">
+                <span style="font-size:0.55rem; color:var(--accent); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:10px; display:block;">WACHTWOORD WIJZIGEN</span>
+                <input type="password" id="profile-pw1" placeholder="Nieuw wachtwoord" maxlength="64"
+                       style="width:100%; padding:11px 14px; background:var(--surface2); border:1px solid #2a3040; color:var(--text); border-radius:10px; font-family:'DM Mono',monospace; font-size:0.85rem; outline:none; margin-bottom:10px;">
+                <input type="password" id="profile-pw2" placeholder="Herhaal wachtwoord" maxlength="64"
+                       style="width:100%; padding:11px 14px; background:var(--surface2); border:1px solid #2a3040; color:var(--text); border-radius:10px; font-family:'DM Mono',monospace; font-size:0.85rem; outline:none;">
+            </div>
+
+            <button onclick="saveProfile()" style="width:100%; padding:16px; border:none; border-radius:12px; background:var(--accent); color:#0a0d10; font-family:'Bebas Neue'; font-size:1.2rem; letter-spacing:0.1em; cursor:pointer; margin-bottom:10px;">OPSLAAN</button>
+            <button onclick="closeProfile()" style="width:100%; padding:14px; border:1px solid #2a3040; border-radius:12px; background:transparent; color:var(--muted); font-family:'Bebas Neue'; font-size:1rem; letter-spacing:0.1em; cursor:pointer;">TERUG</button>
+        </div>
+    </div>
 </div>
 
 <div class="timer-bar-wrap"><div id="timer-bar"></div></div>
@@ -352,6 +388,7 @@ const isGuest = !!sessionStorage.getItem('isGuest');
         const nameInput = document.getElementById('name-input');
         nameInput.value = myName;
         document.getElementById('name-hint').textContent = 'Je kunt je naam hier aanpassen.';
+        document.getElementById('profile-btn').style.display = 'none';
     }
 })();
 
@@ -359,6 +396,58 @@ async function logout() {
     await sb.auth.signOut();
     sessionStorage.clear();
     location.href = 'auth.html';
+}
+
+function goToProfile() {
+    if (isGuest) return;
+    // Vul huidige naam in
+    document.getElementById('profile-username').value = myName;
+    document.getElementById('profile-pw1').value = '';
+    document.getElementById('profile-pw2').value = '';
+    document.getElementById('profile-msg').textContent = '';
+    document.getElementById('profile-msg').className = '';
+    document.getElementById('profile-overlay').style.display = 'flex';
+}
+
+function closeProfile() {
+    document.getElementById('profile-overlay').style.display = 'none';
+}
+
+async function saveProfile() {
+    const newName = document.getElementById('profile-username').value.trim();
+    const pw1     = document.getElementById('profile-pw1').value;
+    const pw2     = document.getElementById('profile-pw2').value;
+    const msgEl   = document.getElementById('profile-msg');
+
+    if (!newName)           { msgEl.style.color='var(--danger)'; msgEl.textContent='Vul een gebruikersnaam in.'; return; }
+    if (newName.length < 2) { msgEl.style.color='var(--danger)'; msgEl.textContent='Naam moet minimaal 2 tekens zijn.'; return; }
+    if (pw1 && pw1 !== pw2) { msgEl.style.color='var(--danger)'; msgEl.textContent='Wachtwoorden komen niet overeen.'; return; }
+    if (pw1 && pw1.length < 6) { msgEl.style.color='var(--danger)'; msgEl.textContent='Wachtwoord minimaal 6 tekens.'; return; }
+
+    msgEl.style.color = 'var(--muted)'; msgEl.textContent = 'Bezig met opslaan…';
+
+    // Update user_metadata (naam)
+    const updateData = { data: { username: newName } };
+    if (pw1) updateData.password = pw1;
+
+    const { error } = await sb.auth.updateUser(updateData);
+
+    if (error) {
+        msgEl.style.color = 'var(--danger)';
+        msgEl.textContent = error.message;
+        return;
+    }
+
+    // Update lokaal
+    myName = newName;
+    sessionStorage.setItem('userName', myName);
+    document.getElementById('name-input').value = myName;
+
+    msgEl.style.color = 'var(--accent)';
+    msgEl.textContent = pw1 ? '✓ Naam en wachtwoord opgeslagen!' : '✓ Naam opgeslagen!';
+
+    // Sluit na 1.5s automatisch
+    setTimeout(closeProfile, 1500);
 }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
