@@ -205,7 +205,8 @@
             <div class="menu-card">
                 <div class="field-group">
                     <span class="field-label">Jouw naam</span>
-                    <input type="text" id="name-input" placeholder="Naam" maxlength="12">
+                    <input type="text" id="name-input" placeholder="Naam" maxlength="16">
+                    <div id="name-hint" style="font-size:0.55rem; color:var(--muted); margin-top:5px;"></div>
                 </div>
                 <div class="field-group">
                     <span class="field-label">Puntenlimiet</span>
@@ -303,16 +304,29 @@ const sb = supabase.createClient(
 );
 
 let myName = sessionStorage.getItem('userName') || 'Speler';
-document.getElementById('name-input').value = myName;
+const isGuest = !!sessionStorage.getItem('isGuest');
 
 (async () => {
-    if (!sessionStorage.getItem('isGuest')) {
+    if (!isGuest) {
         const { data: { session } } = await sb.auth.getSession();
         if (!session) { location.href = 'auth.html'; return; }
-        if (!sessionStorage.getItem('userName')) {
-            myName = session.user.email.split('@')[0];
-            document.getElementById('name-input').value = myName;
-        }
+        // Haal gebruikersnaam op uit user_metadata (ingesteld bij registratie)
+        const storedName = session.user.user_metadata?.username || session.user.email.split('@')[0];
+        myName = storedName;
+        sessionStorage.setItem('userName', myName);
+        // Account-gebruiker: naam vast, niet aanpasbaar
+        const nameInput = document.getElementById('name-input');
+        nameInput.value    = myName;
+        nameInput.readOnly = true;
+        nameInput.style.color   = 'var(--muted)';
+        nameInput.style.cursor  = 'default';
+        nameInput.style.borderColor = '#2a3040';
+        document.getElementById('name-hint').textContent = '✓ Ingame naam uit je account — aanpassen kan via je profiel.';
+    } else {
+        // Gast: naam vrij aanpasbaar
+        const nameInput = document.getElementById('name-input');
+        nameInput.value = myName;
+        document.getElementById('name-hint').textContent = 'Je kunt je naam hier aanpassen.';
     }
 })();
 
@@ -330,7 +344,7 @@ let isHost    = false;
 let lastRoundData = null; // bewaar voor gameOver na reveal
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
-function getName() { return document.getElementById('name-input').value.trim() || myName; }
+function getName() { return isGuest ? (document.getElementById('name-input').value.trim() || myName) : myName; }
 function getRules() {
     return {
         limit: parseInt(document.getElementById('limit-val').value),
