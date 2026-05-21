@@ -211,6 +211,12 @@
             text-align: center; flex-shrink: 0;
         }
         .straf-row select { flex: 1; padding: 7px 8px; font-size: 0.8rem; }
+
+        #logboek::-webkit-scrollbar { width: 3px; }
+        #logboek::-webkit-scrollbar-thumb { background: #2a3040; border-radius: 3px; }
+        .log-entry { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .log-entry:last-child { border-bottom: none; }
+        .log-name { color: var(--accent); }
     </style>
 </head>
 <body>
@@ -253,7 +259,7 @@
             <div class="menu-card" style="margin-top:10px;">
                 <div class="field-group">
                     <span class="field-label">Code invullen om mee te doen</span>
-                    <input type="number" id="code-input" placeholder="4-cijferige code" maxlength="4">
+                    <input type="tel" id="code-input" placeholder="4-cijferige code" maxlength="4" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
                 </div>
                 <button class="start-btn secondary" onclick="joinRoom()">MEESPELEN MET CODE</button>
             </div>
@@ -346,6 +352,22 @@
         </div>
     </div>
     <div><div id="player-hand"></div></div>
+</div>
+
+<!-- LOGBOEK -->
+<div id="logboek" style="
+    position:fixed; bottom:80px; right:10px;
+    width:160px; max-height:120px;
+    background:rgba(13,17,26,0.88);
+    border:1px solid #1e2535;
+    border-radius:10px;
+    padding:6px 8px;
+    overflow-y:auto;
+    z-index:100;
+    display:none;
+">
+    <div style="font-size:0.5rem; color:var(--accent); letter-spacing:0.1em; margin-bottom:4px; font-family:'Bebas Neue';">LOGBOEK</div>
+    <div id="log-entries" style="font-size:0.58rem; color:var(--muted); line-height:1.7;"></div>
 </div>
 
 <div class="controls">
@@ -453,6 +475,30 @@ async function saveProfile() {
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const socket = io();
 let lastState     = null;
+let logEntries    = [];
+
+function addLog(text) {
+    const container = document.getElementById('log-entries');
+    if (!container) return;
+    logEntries.push(text);
+    if (logEntries.length > 30) logEntries.shift();
+    container.innerHTML = logEntries.map(e => '<div class="log-entry">' + e + '</div>').join('');
+    // Scroll naar beneden
+    const lb = document.getElementById('logboek');
+    lb.scrollTop = lb.scrollHeight;
+}
+
+function clearLog() {
+    logEntries = [];
+    const container = document.getElementById('log-entries');
+    if (container) container.innerHTML = '';
+}
+
+function cardShortLabel(c) {
+    if (!c) return '?';
+    const v = c.v === 0 ? 'J' : c.v === 1 ? 'A' : c.v === 11 ? 'B' : c.v === 12 ? 'V' : c.v === 13 ? 'H' : c.v;
+    return v + (c.s || '');
+}
 let selected      = [];
 let isHost        = false;
 let lastRoundData = null;
@@ -603,7 +649,7 @@ function cardClass(c) {
     return 'black';
 }
 function cardLabel(v) {
-    if (v === 0)  return '🃏';
+    if (v === 0)  return 'J';
     if (v === 1)  return 'A';
     if (v === 11) return 'B';
     if (v === 12) return 'V';
@@ -615,7 +661,7 @@ function createCardEl(c, isMini) {
     div.className = 'card ' + cardClass(c) + (isMini ? ' mini-card' : '');
     const lbl  = cardLabel(c.v);
     const suit = c.s || '';
-    div.innerHTML = '<div class="card-corner">' + lbl + '<br>' + suit + '</div><div class="card-center">' + (c.v === 0 ? '🃏' : suit) + '</div>';
+    div.innerHTML = '<div class="card-corner">' + lbl + '<br>' + suit + '</div><div class="card-center">' + (c.v === 0 ? 'J' : suit) + '</div>';
     return div;
 }
 
@@ -654,6 +700,7 @@ function nextRound() {
     socket.emit('nextRound');
     document.getElementById('next-round-btn').disabled = true;
     document.getElementById('next-round-btn').textContent = 'BEZIG…';
+    clearLog();
 }
 
 // ─── SOCKET EVENTS ───────────────────────────────────────────────────────────
@@ -669,6 +716,7 @@ socket.on('updateState', state => {
     } else {
         document.getElementById('setup-menu').style.display  = 'none';
         document.getElementById('reveal-overlay').style.display = 'none';
+        document.getElementById('logboek').style.display = 'block';
         renderGame(state);
     }
 });
@@ -678,6 +726,10 @@ socket.on('roundEnd', data => {
     showReveal(data);
 });
 socket.on('gameOver', data => showGameOver(data));
+
+socket.on('logEvent', ({ text }) => {
+    addLog(text);
+});
 
 // ─── LOBBY ────────────────────────────────────────────────────────────────────
 function showLobby(state) {
@@ -838,6 +890,50 @@ function renderGame(state) {
     }
 }
 
+// ─── STRAF POPUP ─────────────────────────────────────────────────────────────
+function showStrafPopup(lines) {
+    // Verwijder eventuele oude popup
+    const old = document.getElementById('straf-popup');
+    if (old) old.remove();
+
+    const popup = document.createElement('div');
+    popup.id = 'straf-popup';
+    popup.style.cssText = [
+        'position:fixed', 'inset:0', 'z-index:4000',
+        'background:rgba(8,10,15,0.96)',
+        'display:flex', 'flex-direction:column',
+        'align-items:center', 'justify-content:center',
+        'padding:30px', 'text-align:center',
+        'cursor:pointer'
+    ].join(';');
+
+    const rowsHtml = lines.map(l =>
+        '<div style="' + [
+            'background:var(--surface)',
+            'border:1px solid #2a3040',
+            'border-radius:16px',
+            'padding:18px 20px',
+            'margin-bottom:12px',
+            'width:100%',
+            'max-width:320px'
+        ].join(';') + '">' +
+        '<div style="font-size:2rem; margin-bottom:6px;">' + l.icon + '</div>' +
+        '<div style="font-family:'Bebas Neue';font-size:1.5rem;color:var(--text);letter-spacing:0.08em;">' + l.name.toUpperCase() + '</div>' +
+        '<div style="font-size:0.65rem;color:var(--muted);letter-spacing:0.1em;margin:4px 0 10px;">' + l.label + '</div>' +
+        '<div style="font-family:'Bebas Neue';font-size:3rem;color:var(--accent);line-height:1;letter-spacing:0.05em;">' + l.n + '</div>' +
+        '<div style="font-family:'Bebas Neue';font-size:1.2rem;color:var(--accent);letter-spacing:0.1em;">' + l.t.toUpperCase() + '</div>' +
+        '</div>'
+    ).join('');
+
+    popup.innerHTML =
+        '<div style="font-family:'Bebas Neue';font-size:3rem;color:var(--danger);letter-spacing:0.1em;margin-bottom:20px;line-height:1;">🍺 DRINKEN!</div>' +
+        '<div style="width:100%;display:flex;flex-direction:column;align-items:center;">' + rowsHtml + '</div>' +
+        '<div style="font-size:0.65rem;color:var(--muted);margin-top:20px;letter-spacing:0.1em;">TIK OM TE SLUITEN</div>';
+
+    popup.onclick = () => popup.remove();
+    document.body.appendChild(popup);
+}
+
 // ─── REVEAL ──────────────────────────────────────────────────────────────────
 function showReveal(data) {
     selected = [];
@@ -847,31 +943,25 @@ function showReveal(data) {
 
     title.textContent = data.callerName.toUpperCase() + ' GEEFT EEN CALL!';
 
-    // Mijlpaal drinken banner
-    const existingBanner = document.getElementById('milestone-banner');
-    if (existingBanner) existingBanner.remove();
-    if (data.milestoneHits && data.milestoneHits.length > 0) {
-        const banner = document.createElement('div');
-        banner.id = 'milestone-banner';
-        banner.style.cssText = 'background:rgba(255,204,0,0.12);border:1px solid var(--warn);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:0.72rem;line-height:2;text-align:center;';
-        banner.innerHTML = '🍺 <strong style="color:var(--warn);font-family:Bebas Neue;letter-spacing:0.05em;">DRINKEN!</strong><br>' +
-            data.milestoneHits.map(h =>
-                '<span style="color:var(--text)">' + h.name.toUpperCase() + ' bereikt ' + h.pts + ' PT → ' + h.n + ' ' + h.t.toUpperCase() + '</span>'
-            ).join('<br>');
-        document.getElementById('reveal-overlay').insertBefore(banner, document.getElementById('reveal-grid'));
-    }
-
-    // Banner: hoogste handpunten van de ronde
-    const existingHighBanner = document.getElementById('high-banner');
-    if (existingHighBanner) existingHighBanner.remove();
+    // Verzamel alle straffen
+    const strafLines = [];
     if (data.highStrafHit) {
         const h = data.highStrafHit;
-        const hBanner = document.createElement('div');
-        hBanner.id = 'high-banner';
-        hBanner.style.cssText = 'background:rgba(255,51,102,0.1);border:1px solid var(--danger);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:0.72rem;line-height:1.8;text-align:center;';
-        hBanner.innerHTML = '🔥 <strong style="color:var(--danger);font-family:Bebas Neue;letter-spacing:0.05em;">MEESTE PUNTEN!</strong><br>' +
-            '<span style="color:var(--text)">' + h.name.toUpperCase() + ' had ' + h.score + ' PT in hand → ' + h.n + ' ' + h.t.toUpperCase() + '</span>';
-        document.getElementById('reveal-overlay').insertBefore(hBanner, document.getElementById('reveal-grid'));
+        strafLines.push({ icon: '🔥', name: h.name, label: 'MEESTE PUNTEN (' + h.score + ' PT)', n: h.n, t: h.t });
+    }
+    if (data.milestoneHits && data.milestoneHits.length > 0) {
+        data.milestoneHits.forEach(h => {
+            strafLines.push({ icon: '📈', name: h.name, label: h.pts + ' PT BEREIKT', n: h.n, t: h.t });
+        });
+    }
+
+    // Verwijder oude banners
+    ['milestone-banner','high-banner','straf-popup'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.remove();
+    });
+
+    if (strafLines.length > 0) {
+        showStrafPopup(strafLines);
     }
 
     title.style.color = data.kamoFail ? 'var(--danger)' : 'var(--accent)';
