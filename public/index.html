@@ -90,10 +90,7 @@
         .stack-wrap { position: relative; width: var(--card-w); height: var(--card-h); cursor: pointer; }
         .stack-label { position: absolute; bottom: -18px; left: 0; right: 0; text-align: center; font-size: 0.5rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
         .deck-count  { position: absolute; top: -18px; right: 0; font-size: 0.5rem; color: var(--muted); }
-
-        /* open stapel breeder als er kaarten naast elkaar staan */
         #open-stack { width: calc(var(--card-w) * 2.2); overflow: visible; }
-
         #player-hand { display: flex; gap: 5px; align-items: flex-end; }
         .card-wrap { position: relative; width: var(--card-w); height: var(--card-h); cursor: pointer; }
         .slot-empty { width: var(--card-w); height: var(--card-h); border: 1px dashed rgba(255,255,255,0.1); border-radius: 7px; opacity: 0.3; }
@@ -124,7 +121,7 @@
         .menu-card  { background: var(--surface); border: 1px solid #1e2535; padding: 20px; border-radius: 20px; margin-bottom: 12px; }
         .field-label { font-size: 0.55rem; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 5px; display: block; }
         .field-group { margin-bottom: 14px; }
-        select, input[type=number], input[type=text] {
+        select, input[type=number], input[type=text], input[type=tel] {
             width: 100%; padding: 11px 14px; background: var(--surface2); border: 1px solid #2a3040;
             color: var(--text); border-radius: 10px; font-family: 'DM Mono', monospace; font-size: 0.85rem;
             appearance: none; outline: none; transition: border-color 0.2s;
@@ -144,6 +141,21 @@
         .rules-hint { font-size: 0.5rem; color: var(--muted); text-align: center; margin-top: 14px; line-height: 1.8; letter-spacing: 0.04em; }
         #lobby-code { font-family: 'Bebas Neue'; font-size: 4rem; color: var(--accent); letter-spacing: 10px; text-align: center; margin: 8px 0; }
         #lobby-players { font-size: 0.8rem; color: var(--muted); line-height: 2; margin-bottom: 16px; }
+
+        /* ── STRAF RIJEN ── */
+        .straf-row {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 10px; background: var(--surface2);
+            border-radius: 10px; margin-bottom: 7px;
+            border-left: 3px solid #2a3040;
+        }
+        .straf-row.milestone-50  { border-left-color: #3b82f6; }
+        .straf-row.milestone-100 { border-left-color: var(--warn); }
+        .straf-row.milestone-go  { border-left-color: var(--accent); }
+        .straf-row .straf-label  { font-size: 0.6rem; color: var(--muted); width: 120px; flex-shrink: 0; letter-spacing: 0.05em; }
+        .straf-row input[type=number] { width: 52px; padding: 7px 8px; font-size: 0.8rem; text-align: center; flex-shrink: 0; }
+        .straf-row select { flex: 1; padding: 7px 8px; font-size: 0.8rem; }
+
         #reveal-overlay {
             position: fixed; inset: 0; background: rgba(8,10,15,0.97); z-index: 1000;
             display: none; flex-direction: column; padding: 16px; overflow-y: auto;
@@ -193,30 +205,6 @@
             white-space: nowrap;
         }
         #toast.show { opacity: 1; }
-
-        /* ── STRAF RIJEN ── */
-        .straf-row {
-            display: flex; align-items: center; gap: 6px;
-            padding: 8px 10px; background: var(--surface2);
-            border-radius: 10px; margin-bottom: 7px;
-            border-left: 3px solid #2a3040;
-        }
-        .straf-row.milestone-50  { border-left-color: #3b82f6; }
-        .straf-row.milestone-100 { border-left-color: var(--warn); }
-        .straf-row.milestone-150 { border-left-color: var(--danger); }
-        .straf-row.milestone-go  { border-left-color: var(--accent); }
-        .straf-row .straf-label  { font-size: 0.6rem; color: var(--muted); width: 120px; flex-shrink: 0; letter-spacing: 0.05em; }
-        .straf-row input[type=number] {
-            width: 52px; padding: 7px 8px; font-size: 0.8rem;
-            text-align: center; flex-shrink: 0;
-        }
-        .straf-row select { flex: 1; padding: 7px 8px; font-size: 0.8rem; }
-
-        #logboek::-webkit-scrollbar { width: 3px; }
-        #logboek::-webkit-scrollbar-thumb { background: #2a3040; border-radius: 3px; }
-        .log-entry { padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-        .log-entry:last-child { border-bottom: none; }
-        .log-name { color: var(--accent); }
     </style>
 </head>
 <body>
@@ -259,7 +247,7 @@
             <div class="menu-card" style="margin-top:10px;">
                 <div class="field-group">
                     <span class="field-label">Code invullen om mee te doen</span>
-                    <input type="tel" id="code-input" placeholder="4-cijferige code" maxlength="4" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
+                    <input type="number" id="code-input" placeholder="4-cijferige code" maxlength="4">
                 </div>
                 <button class="start-btn secondary" onclick="joinRoom()">MEESPELEN MET CODE</button>
             </div>
@@ -303,35 +291,24 @@
     <button class="go-btn" onclick="location.reload()">NIEUW SPEL</button>
 </div>
 
-<!-- ── PROFIEL OVERLAY ── -->
-<div id="profile-overlay" style="
-    position:fixed; inset:0; background:var(--bg); z-index:2500;
-    display:none; flex-direction:column; align-items:center; justify-content:center;
-    padding:24px;
-    background-image: radial-gradient(ellipse at 50% 0%, rgba(0,255,204,0.06) 0%, transparent 70%);
-">
-    <div style="width:100%; max-width:360px;">
-        <div style="font-family:'Bebas Neue'; font-size:2.5rem; color:var(--accent); letter-spacing:0.12em; text-align:center; margin-bottom:4px;">MIJN PROFIEL</div>
-        <div style="font-size:0.55rem; color:var(--muted); text-align:center; letter-spacing:0.18em; margin-bottom:24px;">ACCOUNTINSTELLINGEN</div>
-        <div style="background:var(--surface); border:1px solid #1e2535; border-radius:20px; padding:24px;">
-            <div id="profile-msg" style="min-height:18px; font-size:0.72rem; text-align:center; margin-bottom:14px; color:var(--danger);"></div>
-
+<!-- PROFIEL OVERLAY -->
+<div id="profile-overlay" style="position:fixed;inset:0;background:var(--bg);z-index:2500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;background-image:radial-gradient(ellipse at 50% 0%,rgba(0,255,204,0.06) 0%,transparent 70%);">
+    <div style="width:100%;max-width:360px;">
+        <div style="font-family:'Bebas Neue';font-size:2.5rem;color:var(--accent);letter-spacing:0.12em;text-align:center;margin-bottom:4px;">MIJN PROFIEL</div>
+        <div style="font-size:0.55rem;color:var(--muted);text-align:center;letter-spacing:0.18em;margin-bottom:24px;">ACCOUNTINSTELLINGEN</div>
+        <div style="background:var(--surface);border:1px solid #1e2535;border-radius:20px;padding:24px;">
+            <div id="profile-msg" style="min-height:18px;font-size:0.72rem;text-align:center;margin-bottom:14px;color:var(--danger);"></div>
             <div style="margin-bottom:14px;">
-                <span style="font-size:0.55rem; color:var(--accent); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:5px; display:block;">Gebruikersnaam</span>
-                <input type="text" id="profile-username" placeholder="Nieuwe gebruikersnaam" maxlength="16"
-                       style="width:100%; padding:11px 14px; background:var(--surface2); border:1px solid #2a3040; color:var(--text); border-radius:10px; font-family:'DM Mono',monospace; font-size:0.85rem; outline:none;">
+                <span style="font-size:0.55rem;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px;display:block;">Gebruikersnaam</span>
+                <input type="text" id="profile-username" placeholder="Nieuwe gebruikersnaam" maxlength="16" autocomplete="nickname">
             </div>
-
-            <div style="border-top:1px solid #1e2535; padding-top:16px; margin-bottom:14px;">
-                <span style="font-size:0.55rem; color:var(--accent); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:10px; display:block;">WACHTWOORD WIJZIGEN</span>
-                <input type="password" id="profile-pw1" placeholder="Nieuw wachtwoord" maxlength="64"
-                       style="width:100%; padding:11px 14px; background:var(--surface2); border:1px solid #2a3040; color:var(--text); border-radius:10px; font-family:'DM Mono',monospace; font-size:0.85rem; outline:none; margin-bottom:10px;">
-                <input type="password" id="profile-pw2" placeholder="Herhaal wachtwoord" maxlength="64"
-                       style="width:100%; padding:11px 14px; background:var(--surface2); border:1px solid #2a3040; color:var(--text); border-radius:10px; font-family:'DM Mono',monospace; font-size:0.85rem; outline:none;">
+            <div style="border-top:1px solid #1e2535;padding-top:16px;margin-bottom:14px;">
+                <span style="font-size:0.55rem;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;display:block;">WACHTWOORD WIJZIGEN</span>
+                <input type="password" id="profile-pw1" placeholder="Nieuw wachtwoord" style="margin-bottom:10px;">
+                <input type="password" id="profile-pw2" placeholder="Herhaal wachtwoord">
             </div>
-
-            <button onclick="saveProfile()" style="width:100%; padding:16px; border:none; border-radius:12px; background:var(--accent); color:#0a0d10; font-family:'Bebas Neue'; font-size:1.2rem; letter-spacing:0.1em; cursor:pointer; margin-bottom:10px;">OPSLAAN</button>
-            <button onclick="closeProfile()" style="width:100%; padding:14px; border:1px solid #2a3040; border-radius:12px; background:transparent; color:var(--muted); font-family:'Bebas Neue'; font-size:1rem; letter-spacing:0.1em; cursor:pointer;">TERUG</button>
+            <button onclick="saveProfile()" style="width:100%;padding:16px;border:none;border-radius:12px;background:var(--accent);color:#0a0d10;font-family:'Bebas Neue';font-size:1.2rem;letter-spacing:0.1em;cursor:pointer;margin-bottom:10px;">OPSLAAN</button>
+            <button onclick="closeProfile()" style="width:100%;padding:14px;border:1px solid #2a3040;border-radius:12px;background:transparent;color:var(--muted);font-family:'Bebas Neue';font-size:1rem;letter-spacing:0.1em;cursor:pointer;">TERUG</button>
         </div>
     </div>
 </div>
@@ -354,22 +331,6 @@
     <div><div id="player-hand"></div></div>
 </div>
 
-<!-- LOGBOEK -->
-<div id="logboek" style="
-    position:fixed; bottom:80px; right:10px;
-    width:160px; max-height:120px;
-    background:rgba(13,17,26,0.88);
-    border:1px solid #1e2535;
-    border-radius:10px;
-    padding:6px 8px;
-    overflow-y:auto;
-    z-index:100;
-    display:none;
-">
-    <div style="font-size:0.5rem; color:var(--accent); letter-spacing:0.1em; margin-bottom:4px; font-family:'Bebas Neue';">LOGBOEK</div>
-    <div id="log-entries" style="font-size:0.58rem; color:var(--muted); line-height:1.7;"></div>
-</div>
-
 <div class="controls">
     <button id="call-btn"   class="btn btn-danger" style="display:none;"      onclick="callKamo()">CALL!</button>
     <button id="action-btn" class="btn btn-accent"  style="visibility:hidden;" onclick="confirmDiscard()">GOOI WEG</button>
@@ -380,7 +341,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
 const sb = supabase.createClient(
     'https://caossvejzjutuwqsjdxc.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNhb3NzdmVqemp1dHV3cXNqZHhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2NzM5MjEsImV4cCI6MjA5NDI0OTkyMX0.wjv6tRfeQX-0FORoBbSQgr-TbHWdLLThG4RPV4DCNk4'
@@ -393,115 +353,85 @@ const isGuest = !!sessionStorage.getItem('isGuest');
     if (!isGuest) {
         const { data: { session } } = await sb.auth.getSession();
         if (!session) { location.href = 'auth.html'; return; }
-        // Haal gebruikersnaam op uit user_metadata (ingesteld bij registratie)
         const storedName = session.user.user_metadata?.username || session.user.email.split('@')[0];
         myName = storedName;
         sessionStorage.setItem('userName', myName);
-        // Account-gebruiker: naam vast, niet aanpasbaar
         const nameInput = document.getElementById('name-input');
         nameInput.value    = myName;
         nameInput.readOnly = true;
         nameInput.style.color   = 'var(--muted)';
         nameInput.style.cursor  = 'default';
         nameInput.style.borderColor = '#2a3040';
-        document.getElementById('name-hint').textContent = '✓ Ingame naam uit je account — aanpassen kan via je profiel.';
+        document.getElementById('name-hint').textContent = '✓ Ingame naam uit je account — aanpassen via Mijn Profiel.';
     } else {
-        // Gast: naam vrij aanpasbaar
-        const nameInput = document.getElementById('name-input');
-        nameInput.value = myName;
+        document.getElementById('name-input').value = myName;
         document.getElementById('name-hint').textContent = 'Je kunt je naam hier aanpassen.';
         document.getElementById('profile-btn').style.display = 'none';
     }
 })();
 
-async function logout() {
-    await sb.auth.signOut();
-    sessionStorage.clear();
-    location.href = 'auth.html';
+// ─── STRAF RIJEN ──────────────────────────────────────────────────────────────
+function updateStrafRows() {
+    const limit = parseInt(document.getElementById('limit-val').value);
+    const container = document.getElementById('straf-rows');
+    container.innerHTML = '';
+
+    // Eerst: hoogste punten ronde rij bovenaan
+    const highRow = document.createElement('div');
+    highRow.className = 'straf-row';
+    highRow.style.borderLeftColor = 'var(--danger)';
+    highRow.style.marginBottom = '4px';
+    highRow.innerHTML =
+        '<span class="straf-label" style="font-size:0.55rem;">MEESTE PUNTEN RONDE</span>' +
+        '<input type="number" id="straf-n-high" value="1" min="0" max="30">' +
+        '<select id="straf-t-high">' +
+        '<option value="slokken">Slokken</option>' +
+        '<option value="adtjes">Adtjes</option>' +
+        '</select>';
+    container.appendChild(highRow);
+
+    // Mijlpalen (alleen tussenmijlpalen, niet de limiet zelf)
+    const milestones = [];
+    if (limit > 50)  milestones.push({ pts: 50,  label: '50 PT',  cls: 'milestone-50' });
+    if (limit > 100) milestones.push({ pts: 100, label: '100 PT', cls: 'milestone-100' });
+    milestones.push({ pts: 'go', label: 'GAME OVER (' + limit + ' PT)', cls: 'milestone-go' });
+
+    milestones.forEach(m => {
+        const row = document.createElement('div');
+        row.className = 'straf-row ' + m.cls;
+        row.innerHTML =
+            '<span class="straf-label">' + m.label + '</span>' +
+            '<input type="number" id="straf-n-' + m.pts + '" value="' + (m.pts === 'go' ? 5 : m.pts === 50 ? 5 : 1) + '" min="1" max="30">' +
+            '<select id="straf-t-' + m.pts + '">' +
+            '<option value="slokken"' + (m.pts === 100 ? '' : ' selected') + '>Slokken</option>' +
+            '<option value="adtjes"' + (m.pts === 100 ? ' selected' : '') + '>Adtjes</option>' +
+            '</select>';
+        container.appendChild(row);
+    });
 }
+document.addEventListener('DOMContentLoaded', updateStrafRows);
+setTimeout(updateStrafRows, 0);
 
-function goToProfile() {
-    if (isGuest) return;
-    // Vul huidige naam in
-    document.getElementById('profile-username').value = myName;
-    document.getElementById('profile-pw1').value = '';
-    document.getElementById('profile-pw2').value = '';
-    document.getElementById('profile-msg').textContent = '';
-    document.getElementById('profile-msg').className = '';
-    document.getElementById('profile-overlay').style.display = 'flex';
-}
-
-function closeProfile() {
-    document.getElementById('profile-overlay').style.display = 'none';
-}
-
-async function saveProfile() {
-    const newName = document.getElementById('profile-username').value.trim();
-    const pw1     = document.getElementById('profile-pw1').value;
-    const pw2     = document.getElementById('profile-pw2').value;
-    const msgEl   = document.getElementById('profile-msg');
-
-    if (!newName)           { msgEl.style.color='var(--danger)'; msgEl.textContent='Vul een gebruikersnaam in.'; return; }
-    if (newName.length < 2) { msgEl.style.color='var(--danger)'; msgEl.textContent='Naam moet minimaal 2 tekens zijn.'; return; }
-    if (pw1 && pw1 !== pw2) { msgEl.style.color='var(--danger)'; msgEl.textContent='Wachtwoorden komen niet overeen.'; return; }
-    if (pw1 && pw1.length < 6) { msgEl.style.color='var(--danger)'; msgEl.textContent='Wachtwoord minimaal 6 tekens.'; return; }
-
-    msgEl.style.color = 'var(--muted)'; msgEl.textContent = 'Bezig met opslaan…';
-
-    // Update user_metadata (naam)
-    const updateData = { data: { username: newName } };
-    if (pw1) updateData.password = pw1;
-
-    const { error } = await sb.auth.updateUser(updateData);
-
-    if (error) {
-        msgEl.style.color = 'var(--danger)';
-        msgEl.textContent = error.message;
-        return;
-    }
-
-    // Update lokaal
-    myName = newName;
-    sessionStorage.setItem('userName', myName);
-    document.getElementById('name-input').value = myName;
-
-    msgEl.style.color = 'var(--accent)';
-    msgEl.textContent = pw1 ? '✓ Naam en wachtwoord opgeslagen!' : '✓ Naam opgeslagen!';
-
-    // Sluit na 1.5s automatisch
-    setTimeout(closeProfile, 1500);
+function getRules() {
+    const limit = parseInt(document.getElementById('limit-val').value);
+    const timer = parseInt(document.getElementById('timer-val').value);
+    const milestones = [];
+    [50, 100, 'go'].forEach(p => {
+        if (p !== 'go' && p >= limit) return;
+        const nEl = document.getElementById('straf-n-' + p);
+        const tEl = document.getElementById('straf-t-' + p);
+        if (nEl && tEl) milestones.push({ pts: p, n: parseInt(nEl.value), t: tEl.value });
+    });
+    const highN = parseInt(document.getElementById('straf-n-high')?.value || 1);
+    const highT = document.getElementById('straf-t-high')?.value || 'slokken';
+    return { limit, timer, milestones, highStraf: { n: highN, t: highT } };
 }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const socket = io();
 let lastState     = null;
-let logEntries    = [];
-
-function addLog(text) {
-    const container = document.getElementById('log-entries');
-    if (!container) return;
-    logEntries.push(text);
-    if (logEntries.length > 30) logEntries.shift();
-    container.innerHTML = logEntries.map(e => '<div class="log-entry">' + e + '</div>').join('');
-    // Scroll naar beneden
-    const lb = document.getElementById('logboek');
-    lb.scrollTop = lb.scrollHeight;
-}
-
-function clearLog() {
-    logEntries = [];
-    const container = document.getElementById('log-entries');
-    if (container) container.innerHTML = '';
-}
-
-function cardShortLabel(c) {
-    if (!c) return '?';
-    const v = c.v === 0 ? 'J' : c.v === 1 ? 'A' : c.v === 11 ? 'B' : c.v === 12 ? 'V' : c.v === 13 ? 'H' : c.v;
-    return v + (c.s || '');
-}
 let selected      = [];
 let isHost        = false;
-let lastRoundData = null;
 let timerInterval = null;
 let timerMax      = 0;
 let timerLeft     = 0;
@@ -519,10 +449,7 @@ function startTurnTimer(seconds) {
         bar.style.width = (timerLeft / timerMax * 100) + '%';
         if (timerLeft <= timerMax * 0.4) bar.style.background = 'linear-gradient(90deg, var(--warn), #ffaa00)';
         if (timerLeft <= timerMax * 0.2) bar.style.background = 'linear-gradient(90deg, var(--danger), #cc0033)';
-        if (timerLeft <= 0) {
-            clearInterval(timerInterval);
-            autoAction();
-        }
+        if (timerLeft <= 0) { clearInterval(timerInterval); autoAction(); }
     }, 100);
 }
 
@@ -543,93 +470,19 @@ function cardScore(c) {
 function autoAction() {
     if (!lastState || lastState.turn !== socket.id) return;
     if (lastState.phase === 'DISCARD') {
-        // Gooi de kaart met de HOOGSTE waarde weg (meeste punten kwijt)
         const hand = (lastState.players[socket.id] || {}).hand || [];
         let bestIdx = -1, bestScore = -99;
         hand.forEach((c, i) => {
-            if (c && cardScore(c) > bestScore) {
-                bestScore = cardScore(c);
-                bestIdx = i;
-            }
+            if (c && cardScore(c) > bestScore) { bestScore = cardScore(c); bestIdx = i; }
         });
-        if (bestIdx !== -1) {
-            socket.emit('discard', { indices: [bestIdx] });
-            selected = [];
-        }
+        if (bestIdx !== -1) { socket.emit('discard', { indices: [bestIdx] }); selected = []; }
     } else if (lastState.phase === 'DRAW') {
-        // Altijd van de dichte stapel pakken
         socket.emit('drawDeck');
     }
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 function getName() { return isGuest ? (document.getElementById('name-input').value.trim() || myName) : myName; }
-function updateStrafRows() {
-    const limit = parseInt(document.getElementById('limit-val').value);
-    const container = document.getElementById('straf-rows');
-    container.innerHTML = '';
-
-    const milestones = [];
-    // Alleen tussenmijlpalen tonen, niet de limiet zelf
-    if (limit > 50)  milestones.push({ pts: 50,  label: '50 PT',  cls: 'milestone-50' });
-    if (limit > 100) milestones.push({ pts: 100, label: '100 PT', cls: 'milestone-100' });
-    milestones.push({ pts: 'go', label: 'GAME OVER (' + limit + ' PT)', cls: 'milestone-go' });
-
-    // Eerste rij: straf voor hoogste handpunten van de ronde
-    const highRow = document.createElement('div');
-    highRow.className = 'straf-row';
-    highRow.style.borderLeftColor = 'var(--danger)';
-    highRow.style.marginBottom = '4px';
-    highRow.innerHTML =
-        '<span class="straf-label" style="font-size:0.55rem;">MEESTE PUNTEN RONDE</span>' +
-        '<input type="number" id="straf-n-high" value="1" min="0" max="30">' +
-        '<select id="straf-t-high">' +
-        '<option value="slokken">Slokken</option>' +
-        '<option value="adtjes">Adtjes</option>' +
-        '</select>';
-    container.appendChild(highRow);
-
-    milestones.forEach(m => {
-        const row = document.createElement('div');
-        row.className = 'straf-row ' + m.cls;
-        row.innerHTML =
-            '<span class="straf-label">' + m.label + '</span>' +
-            '<input type="number" id="straf-n-' + m.pts + '" value="' + (m.pts === 'go' ? 5 : m.pts === 50 ? 5 : m.pts === 100 ? 1 : 2) + '" min="1" max="30">' +
-            '<select id="straf-t-' + m.pts + '">' +
-            '<option value="slokken"' + (m.pts === 100 ? '' : ' selected') + '>Slokken</option>' +
-            '<option value="adtjes"' + (m.pts === 100 ? ' selected' : '') + '>Adtjes</option>' +
-            '</select>';
-        container.appendChild(row);
-    });
-}
-
-// Init straf rijen bij laden
-document.addEventListener('DOMContentLoaded', updateStrafRows);
-// Fallback: ook direct aanroepen
-setTimeout(updateStrafRows, 0);
-
-function getRules() {
-    const limit = parseInt(document.getElementById('limit-val').value);
-    const timer = parseInt(document.getElementById('timer-val').value);
-
-    const milestones = [];
-    // Alleen tussenmijlpalen (niet de limiet zelf) + game over
-    const allPts = [50, 100, 'go'];
-    allPts.forEach(p => {
-        if (p !== 'go' && p >= limit) return; // sla limiet zelf over
-        const nEl = document.getElementById('straf-n-' + p);
-        const tEl = document.getElementById('straf-t-' + p);
-        if (nEl && tEl) {
-            milestones.push({ pts: p, n: parseInt(nEl.value), t: tEl.value });
-        }
-    });
-
-    const highN = parseInt(document.getElementById('straf-n-high')?.value || 2);
-    const highT = document.getElementById('straf-t-high')?.value || 'slokken';
-    const highStraf = { n: highN, t: highT };
-
-    return { limit, timer, milestones, highStraf };
-}
 function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg; t.classList.add('show');
@@ -640,7 +493,7 @@ function shakeHand() {
     h.classList.remove('error-shake'); void h.offsetWidth; h.classList.add('error-shake');
 }
 
-// ─── CARD HELPERS ─────────────────────────────────────────────────────────────
+// ─── CARDS ────────────────────────────────────────────────────────────────────
 function cardClass(c) {
     if (!c) return 'back';
     if (c.v === 0)  return 'joker';
@@ -649,7 +502,7 @@ function cardClass(c) {
     return 'black';
 }
 function cardLabel(v) {
-    if (v === 0)  return 'J';
+    if (v === 0)  return '🃏';
     if (v === 1)  return 'A';
     if (v === 11) return 'B';
     if (v === 12) return 'V';
@@ -661,11 +514,49 @@ function createCardEl(c, isMini) {
     div.className = 'card ' + cardClass(c) + (isMini ? ' mini-card' : '');
     const lbl  = cardLabel(c.v);
     const suit = c.s || '';
-    div.innerHTML = '<div class="card-corner">' + lbl + '<br>' + suit + '</div><div class="card-center">' + (c.v === 0 ? 'J' : suit) + '</div>';
+    div.innerHTML = '<div class="card-corner">' + lbl + '<br>' + suit + '</div><div class="card-center">' + (c.v === 0 ? '🃏' : suit) + '</div>';
     return div;
 }
 
-// ─── LOBBY ACTIES ─────────────────────────────────────────────────────────────
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+async function logout() {
+    await sb.auth.signOut();
+    sessionStorage.clear();
+    location.href = 'auth.html';
+}
+function goToProfile() {
+    if (isGuest) return;
+    document.getElementById('profile-username').value = myName;
+    document.getElementById('profile-pw1').value = '';
+    document.getElementById('profile-pw2').value = '';
+    document.getElementById('profile-msg').textContent = '';
+    document.getElementById('profile-overlay').style.display = 'flex';
+}
+function closeProfile() {
+    document.getElementById('profile-overlay').style.display = 'none';
+}
+async function saveProfile() {
+    const newName = document.getElementById('profile-username').value.trim();
+    const pw1 = document.getElementById('profile-pw1').value;
+    const pw2 = document.getElementById('profile-pw2').value;
+    const msgEl = document.getElementById('profile-msg');
+    if (!newName)       { msgEl.style.color='var(--danger)'; msgEl.textContent='Vul een naam in.'; return; }
+    if (pw1 && pw1 !== pw2) { msgEl.style.color='var(--danger)'; msgEl.textContent='Wachtwoorden komen niet overeen.'; return; }
+    if (pw1 && pw1.length < 6) { msgEl.style.color='var(--danger)'; msgEl.textContent='Wachtwoord minimaal 6 tekens.'; return; }
+    msgEl.style.color = 'var(--muted)'; msgEl.textContent = 'Bezig…';
+    const updateData = { data: { username: newName } };
+    if (pw1) updateData.password = pw1;
+    const { error } = await sb.auth.updateUser(updateData);
+    if (error) { msgEl.style.color='var(--danger)'; msgEl.textContent=error.message; return; }
+    myName = newName;
+    sessionStorage.setItem('userName', myName);
+    document.getElementById('name-input').value = myName;
+    msgEl.style.color = 'var(--accent)';
+    msgEl.textContent = pw1 ? '✓ Naam en wachtwoord opgeslagen!' : '✓ Naam opgeslagen!';
+    setTimeout(closeProfile, 1500);
+}
+
+// ─── LOBBY ────────────────────────────────────────────────────────────────────
 function createRoom() {
     myName = getName();
     sessionStorage.setItem('userName', myName);
@@ -679,13 +570,16 @@ function joinRoom() {
     socket.emit('joinRoom', { code, userName: myName });
 }
 function startGame()  { socket.emit('startGame'); }
+function nextRound()  {
+    socket.emit('nextRound');
+    document.getElementById('next-round-btn').disabled = true;
+    document.getElementById('next-round-btn').textContent = 'BEZIG…';
+}
 function leaveRoom()  {
     socket.disconnect(); socket.connect();
     document.getElementById('lobby-section').style.display = 'none';
     document.getElementById('join-section').style.display  = 'block';
 }
-
-// ─── GAME ACTIES ──────────────────────────────────────────────────────────────
 function confirmDiscard() {
     if (!selected.length) return;
     socket.emit('discard', { indices: selected });
@@ -695,66 +589,53 @@ function drawDeck()  { socket.emit('drawDeck'); }
 function drawOpen()  { socket.emit('drawOpen'); }
 function callKamo()  { socket.emit('callKamo'); }
 
-// FIX 1: nextRound correct — emit event, geen onclick-override
-function nextRound() {
-    socket.emit('nextRound');
-    document.getElementById('next-round-btn').disabled = true;
-    document.getElementById('next-round-btn').textContent = 'BEZIG…';
-    clearLog();
-}
-
-// ─── SOCKET EVENTS ───────────────────────────────────────────────────────────
+// ─── SOCKET ───────────────────────────────────────────────────────────────────
 socket.on('error',         msg => showToast(msg));
 socket.on('invalidAction', msg => { showToast(msg); shakeHand(); });
 
 socket.on('updateState', state => {
     lastState = state;
     isHost    = (socket.id === state.hostId);
-
     if (state.status === 'LOBBY') {
         showLobby(state);
     } else {
         document.getElementById('setup-menu').style.display  = 'none';
         document.getElementById('reveal-overlay').style.display = 'none';
-        document.getElementById('logboek').style.display = 'block';
         renderGame(state);
     }
 });
+socket.on('roundEnd', data => showReveal(data));
+socket.on('gameOver',  data => showGameOver(data));
 
-socket.on('roundEnd', data => {
-    lastRoundData = data;
-    showReveal(data);
-});
-socket.on('gameOver', data => showGameOver(data));
-
-socket.on('logEvent', ({ text }) => {
-    addLog(text);
-});
-
-// ─── LOBBY ────────────────────────────────────────────────────────────────────
+// ─── LOBBY RENDER ─────────────────────────────────────────────────────────────
 function showLobby(state) {
     document.getElementById('setup-menu').style.display   = 'flex';
     document.getElementById('join-section').style.display  = 'none';
     document.getElementById('lobby-section').style.display = 'block';
     document.getElementById('lobby-code').textContent = state.myRoomCode;
-
     const names = state.playerOrder.map(id => {
         const p = state.players[id];
-        return '<div style="padding:4px 0; border-bottom:1px solid #1e2535;">' + (id === state.hostId ? '👑 ' : '') + p.name + '</div>';
+        return '<div style="padding:4px 0;border-bottom:1px solid #1e2535;">' + (id === state.hostId ? '👑 ' : '') + p.name + '</div>';
     }).join('');
     document.getElementById('lobby-players').innerHTML = names;
-
     const startBtn = document.getElementById('start-game-btn');
     const waitMsg  = document.getElementById('waiting-msg');
     if (isHost) { startBtn.style.display = 'block'; waitMsg.style.display = 'none'; }
     else        { startBtn.style.display = 'none';  waitMsg.style.display = 'block'; }
 }
 
-// ─── GAME RENDER ─────────────────────────────────────────────────────────────
+// ─── GAME RENDER ──────────────────────────────────────────────────────────────
 function renderGame(state) {
     const isMyTurn = state.turn === socket.id;
     const myPhase  = state.phase;
     const me       = state.players[socket.id];
+
+    // Timer
+    if (isMyTurn && state.rules && state.rules.timer) {
+        if (!timerInterval || timerLeft <= 0) startTurnTimer(state.rules.timer);
+    } else if (!isMyTurn) {
+        stopTimer();
+    }
 
     // Scorebar
     const tb = document.getElementById('top-bar');
@@ -770,16 +651,6 @@ function renderGame(state) {
             '<div class="sp-hand">🎴 ' + p.cardCount + ' kaart' + (p.cardCount !== 1 ? 'en' : '') + '</div>';
         tb.appendChild(pill);
     });
-
-    // Timer
-    if (isMyTurn && lastState && lastState.rules && lastState.rules.timer) {
-        // Alleen starten als de beurt net veranderd is (niet bij elke render)
-        if (!timerInterval || timerLeft <= 0) {
-            startTurnTimer(lastState.rules.timer);
-        }
-    } else if (!isMyTurn) {
-        stopTimer();
-    }
 
     // Status
     const statusEl = document.getElementById('status');
@@ -798,52 +669,42 @@ function renderGame(state) {
     if (isMyTurn && myPhase === 'DRAW') deckTop.classList.add('draw-available');
     else deckTop.classList.remove('draw-available');
 
-    // FIX 2: Open stapel – onderste kaarten gestapeld, weggegooide kaarten als waaier
+    // Open stapel
     const os    = document.getElementById('open-stack');
     os.innerHTML = '<span class="stack-label">OPEN</span>';
     const stack = state.openStack || [];
     const ldc   = state.lastDiscardCount || 0;
-
     if (stack.length === 0) {
         const empty = document.createElement('div');
         empty.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:var(--muted);';
         empty.textContent = 'LEEG';
         os.appendChild(empty);
     } else {
-        // Onderste stapel (eerder weggegooide rondes), subtiel gestapeld
         const underCards = stack.slice(0, Math.max(0, stack.length - ldc)).slice(-4);
         underCards.forEach((card, idx) => {
             const el = createCardEl(card, false);
-            const ox = idx * 1.5, oy = idx * 1.5;
-            const rot = idx % 2 === 0 ? 0.5 : -0.5;
-            el.style.transform = 'translate(' + ox + 'px,' + oy + 'px) rotate(' + rot + 'deg)';
+            el.style.transform = 'translate(' + (idx*1.5) + 'px,' + (idx*1.5) + 'px) rotate(' + (idx%2===0?0.5:-0.5) + 'deg)';
             el.style.zIndex = idx + 1;
-            // Pakbare kaart (bovenste van onderste stapel) highlighten in DRAW fase
             if (isMyTurn && myPhase === 'DRAW' && idx === underCards.length - 1) {
-                el.style.border     = '2px solid var(--accent)';
-                el.style.boxShadow  = '0 0 12px rgba(0,255,204,0.4)';
-                el.style.transform  = 'translate(-12px,0px) rotate(-6deg)';
+                el.style.border    = '2px solid var(--accent)';
+                el.style.boxShadow = '0 0 12px rgba(0,255,204,0.4)';
+                el.style.transform = 'translate(-12px,0px) rotate(-6deg)';
             }
             os.appendChild(el);
         });
-
-        // Net weggegooide kaarten als waaier — altijd zichtbaar voor iedereen
         const discarded = stack.slice(Math.max(0, stack.length - ldc));
         discarded.forEach((card, idx) => {
             const el    = createCardEl(card, false);
             const total = discarded.length;
-            // Waaier: meerdere kaarten naast elkaar uitgespreid
-            const spread = total > 1 ? (idx - (total - 1) / 2) * 30 : 4;
-            const rot    = total > 1 ? (idx - (total - 1) / 2) * 9  : 3;
-            el.style.transform  = 'translate(' + spread + 'px,-10px) rotate(' + rot + 'deg)';
-            el.style.zIndex     = 50 + idx;
-            // In DRAW fase zijn dit de niet-pakbare kaarten (grijs)
+            const spread = total > 1 ? (idx - (total-1)/2) * 30 : 4;
+            const rot    = total > 1 ? (idx - (total-1)/2) * 9  : 3;
+            el.style.transform = 'translate(' + spread + 'px,-10px) rotate(' + rot + 'deg)';
+            el.style.zIndex    = 50 + idx;
             if (isMyTurn && myPhase === 'DRAW') {
                 el.style.opacity = '0.45';
             } else {
-                // Buiten draw fase: licht highlight zodat je ze goed ziet
-                el.style.border     = '2px solid rgba(0,255,204,0.55)';
-                el.style.boxShadow  = '0 0 10px rgba(0,255,204,0.25)';
+                el.style.border    = '2px solid rgba(0,255,204,0.55)';
+                el.style.boxShadow = '0 0 10px rgba(0,255,204,0.25)';
             }
             os.appendChild(el);
         });
@@ -866,9 +727,7 @@ function renderGame(state) {
                     else selected.push(i);
                     renderGame(lastState);
                 };
-            } else {
-                wrap.style.cursor = 'default';
-            }
+            } else { wrap.style.cursor = 'default'; }
             wrap.appendChild(el);
         } else {
             const slot = document.createElement('div');
@@ -890,51 +749,31 @@ function renderGame(state) {
     }
 }
 
-// ─── STRAF POPUP ─────────────────────────────────────────────────────────────
+// ─── STRAF POPUP ──────────────────────────────────────────────────────────────
 function showStrafPopup(lines) {
-    // Verwijder eventuele oude popup
     const old = document.getElementById('straf-popup');
     if (old) old.remove();
-
     const popup = document.createElement('div');
     popup.id = 'straf-popup';
-    popup.style.cssText = [
-        'position:fixed', 'inset:0', 'z-index:4000',
-        'background:rgba(8,10,15,0.96)',
-        'display:flex', 'flex-direction:column',
-        'align-items:center', 'justify-content:center',
-        'padding:30px', 'text-align:center',
-        'cursor:pointer'
-    ].join(';');
-
+    popup.style.cssText = 'position:fixed;inset:0;z-index:4000;background:rgba(8,10,15,0.96);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;cursor:pointer;';
     const rowsHtml = lines.map(l =>
-        '<div style="' + [
-            'background:var(--surface)',
-            'border:1px solid #2a3040',
-            'border-radius:16px',
-            'padding:18px 20px',
-            'margin-bottom:12px',
-            'width:100%',
-            'max-width:320px'
-        ].join(';') + '">' +
-        '<div style="font-size:2rem; margin-bottom:6px;">' + l.icon + '</div>' +
-        '<div style="font-family:'Bebas Neue';font-size:1.5rem;color:var(--text);letter-spacing:0.08em;">' + l.name.toUpperCase() + '</div>' +
+        '<div style="background:var(--surface);border:1px solid #2a3040;border-radius:16px;padding:18px 20px;margin-bottom:12px;width:100%;max-width:320px;">' +
+        '<div style="font-size:2rem;margin-bottom:6px;">' + l.icon + '</div>' +
+        '<div style="font-family:Bebas Neue;font-size:1.5rem;color:var(--text);letter-spacing:0.08em;">' + l.name.toUpperCase() + '</div>' +
         '<div style="font-size:0.65rem;color:var(--muted);letter-spacing:0.1em;margin:4px 0 10px;">' + l.label + '</div>' +
-        '<div style="font-family:'Bebas Neue';font-size:3rem;color:var(--accent);line-height:1;letter-spacing:0.05em;">' + l.n + '</div>' +
-        '<div style="font-family:'Bebas Neue';font-size:1.2rem;color:var(--accent);letter-spacing:0.1em;">' + l.t.toUpperCase() + '</div>' +
+        '<div style="font-family:Bebas Neue;font-size:3rem;color:var(--accent);line-height:1;letter-spacing:0.05em;">' + l.n + '</div>' +
+        '<div style="font-family:Bebas Neue;font-size:1.2rem;color:var(--accent);letter-spacing:0.1em;">' + l.t.toUpperCase() + '</div>' +
         '</div>'
     ).join('');
-
     popup.innerHTML =
-        '<div style="font-family:'Bebas Neue';font-size:3rem;color:var(--danger);letter-spacing:0.1em;margin-bottom:20px;line-height:1;">🍺 DRINKEN!</div>' +
+        '<div style="font-family:Bebas Neue;font-size:3rem;color:var(--danger);letter-spacing:0.1em;margin-bottom:20px;line-height:1;">🍺 DRINKEN!</div>' +
         '<div style="width:100%;display:flex;flex-direction:column;align-items:center;">' + rowsHtml + '</div>' +
         '<div style="font-size:0.65rem;color:var(--muted);margin-top:20px;letter-spacing:0.1em;">TIK OM TE SLUITEN</div>';
-
     popup.onclick = () => popup.remove();
     document.body.appendChild(popup);
 }
 
-// ─── REVEAL ──────────────────────────────────────────────────────────────────
+// ─── REVEAL ───────────────────────────────────────────────────────────────────
 function showReveal(data) {
     selected = [];
     const overlay = document.getElementById('reveal-overlay');
@@ -943,26 +782,16 @@ function showReveal(data) {
 
     title.textContent = data.callerName.toUpperCase() + ' GEEFT EEN CALL!';
 
-    // Verzamel alle straffen
+    // Verzamel straffen
     const strafLines = [];
     if (data.highStrafHit) {
         const h = data.highStrafHit;
         strafLines.push({ icon: '🔥', name: h.name, label: 'MEESTE PUNTEN (' + h.score + ' PT)', n: h.n, t: h.t });
     }
     if (data.milestoneHits && data.milestoneHits.length > 0) {
-        data.milestoneHits.forEach(h => {
-            strafLines.push({ icon: '📈', name: h.name, label: h.pts + ' PT BEREIKT', n: h.n, t: h.t });
-        });
+        data.milestoneHits.forEach(h => strafLines.push({ icon: '📈', name: h.name, label: h.pts + ' PT BEREIKT', n: h.n, t: h.t }));
     }
-
-    // Verwijder oude banners
-    ['milestone-banner','high-banner','straf-popup'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.remove();
-    });
-
-    if (strafLines.length > 0) {
-        showStrafPopup(strafLines);
-    }
+    if (strafLines.length > 0) showStrafPopup(strafLines);
 
     title.style.color = data.kamoFail ? 'var(--danger)' : 'var(--accent)';
     grid.innerHTML = '';
@@ -972,13 +801,10 @@ function showReveal(data) {
         let statusClass = '', badge = '';
         if (r.badge === 'WINNER')    { statusClass = 'winner-card'; badge = '<div class="result-badge badge-win">WINNAAR</div>'; }
         if (r.badge === 'KAMO_FAIL') { statusClass = 'loser-card';  badge = '<div class="result-badge badge-kamo">KAMO +20</div>'; }
-
         const box = document.createElement('div');
         box.className = 'player-result-card ' + statusClass;
         box.style.animationDelay = (i * 0.05) + 's';
-
         const cardEls = p.hand.filter(x => x).map(c => createCardEl(c, true).outerHTML).join('');
-
         box.innerHTML =
             '<div class="result-name">' + p.name.toUpperCase() + '</div>' +
             badge +
@@ -990,25 +816,16 @@ function showReveal(data) {
 
     overlay.style.display = 'flex';
 
-    // FIX 1: Volgende ronde knop — altijd opnieuw instellen, nooit onclick overschrijven
     const btn     = document.getElementById('next-round-btn');
     const waitDiv = document.getElementById('next-round-waiting');
-
     btn.disabled    = false;
     btn.textContent = 'VOLGENDE RONDE →';
-
     const hasLosers = data.losers && data.losers.length > 0;
-
     if (isHost) {
         btn.style.display     = 'block';
         waitDiv.style.display = 'none';
-        if (hasLosers) {
-            btn.textContent = 'EINDSTAND BEKIJKEN →';
-            // GameOver tonen (server stuurt ook gameOver event, maar voor zekerheid ook hier)
-            btn.onclick = () => showGameOver(data);
-        } else {
-            btn.onclick = () => nextRound();
-        }
+        btn.onclick = hasLosers ? () => showGameOver(data) : () => nextRound();
+        if (hasLosers) btn.textContent = 'EINDSTAND BEKIJKEN →';
     } else {
         btn.style.display     = 'none';
         waitDiv.style.display = 'block';
@@ -1018,29 +835,24 @@ function showReveal(data) {
 // ─── GAME OVER ────────────────────────────────────────────────────────────────
 function showGameOver(data) {
     document.getElementById('reveal-overlay').style.display = 'none';
-    const go     = document.getElementById('gameover-overlay');
     const losers = data.losers || [];
     const rules  = data.rules  || { straf: { n: 5, t: 'Slokken' } };
-
     document.getElementById('go-losers').textContent =
         losers.map(l => l.name.toUpperCase()).join(' & ') + (losers.length > 1 ? ' VERLIEZEN!' : ' VERLIEST!');
     const goM = data.goMilestone || (rules.milestones && rules.milestones.find(m => m.pts === 'go'));
-    if (goM) {
-        document.getElementById('go-drink').textContent = 'STRAF: ' + goM.n + ' ' + goM.t.toUpperCase();
-    } else if (rules.straf) {
-        document.getElementById('go-drink').textContent = 'STRAF: ' + rules.straf.n + ' ' + rules.straf.t.toUpperCase();
-    }
-
+    document.getElementById('go-drink').textContent = goM
+        ? 'STRAF: ' + goM.n + ' ' + goM.t.toUpperCase()
+        : rules.straf ? 'STRAF: ' + rules.straf.n + ' ' + rules.straf.t.toUpperCase() : '';
     const sc = document.getElementById('go-scores');
     sc.innerHTML = '';
-    data.players.slice().sort((a, b) => a.score - b.score).forEach(p => {
+    data.players.slice().sort((a,b) => a.score - b.score).forEach(p => {
         const isLoser = losers.some(l => l.id === p.id);
         const item = document.createElement('div');
         item.className = 'go-score-item' + (isLoser ? ' loser' : '');
         item.innerHTML = '<div class="gn">' + p.name.toUpperCase() + '</div><div class="gp">' + p.score + '</div>';
         sc.appendChild(item);
     });
-    go.style.display = 'flex';
+    document.getElementById('gameover-overlay').style.display = 'flex';
 }
 </script>
 </body>
