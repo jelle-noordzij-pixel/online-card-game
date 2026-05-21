@@ -10,6 +10,12 @@ let rooms = {};
 
 // ─── DECK ─────────────────────────────────────────────────────────────────────
 
+function cardName(c) {
+    if (!c) return '?';
+    const v = c.v === 0 ? 'J' : c.v === 1 ? 'A' : c.v === 11 ? 'B' : c.v === 12 ? 'V' : c.v === 13 ? 'H' : c.v;
+    return v + (c.s || '');
+}
+
 function buildDeck() {
     const suits = ['♥','♦','♣','♠'];
     let d = [];
@@ -280,6 +286,15 @@ io.on('connection', (socket) => {
         });
 
         room.phase = 'DRAW';
+
+        // Logboek: stuur naar alle spelers wat er weggegooid is
+        const playerName = room.players[socket.id].name;
+        const cardNames  = cards.map(c => cardName(c)).join(', ');
+        const logText    = cards.length > 1
+            ? '<span class="log-name">' + playerName + '</span> gooit ' + cards.length + 'x ' + cardNames + ' weg'
+            : '<span class="log-name">' + playerName + '</span> gooit ' + cardNames + ' weg';
+        io.to(socket.roomCode).emit('logEvent', { text: logText });
+
         sendUpdate(socket.roomCode);
     });
 
@@ -314,6 +329,8 @@ io.on('connection', (socket) => {
         if (!room || room.turn !== socket.id || room.phase !== 'DISCARD') return;
         const score = handScore(room.players[socket.id].hand);
         if (score > 5) { socket.emit('invalidAction', 'Je hebt meer dan 5 punten!'); return; }
+        const callerName = room.players[socket.id].name;
+        io.to(socket.roomCode).emit('logEvent', { text: '<span class="log-name">' + callerName + '</span> roept CALL! (' + score + ' PT)' });
         endRound(socket.roomCode, socket.id);
     });
 
